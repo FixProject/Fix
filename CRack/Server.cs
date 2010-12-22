@@ -6,7 +6,7 @@ using System.Text;
 
 namespace CRack
 {
-    public class Server
+    public class Server : IDisposable
     {
         readonly HttpListener _listener;
 
@@ -16,10 +16,10 @@ namespace CRack
             _listener.Prefixes.Add(prefix);
         }
 
-        public void Start(Middleware middleware)
+        public void Start(Pipe pipe)
         {
             _listener.Start();
-            _listener.BeginGetContext(GotContext, middleware);
+            _listener.BeginGetContext(GotContext, pipe);
         }
 
         public void Stop()
@@ -39,15 +39,15 @@ namespace CRack
             try
             {
                 var context = _listener.EndGetContext(result);
-                var middleware = (Middleware) result.AsyncState;
+                var pipe = (Pipe) result.AsyncState;
 
-                middleware(context.Request.Url.ToString(),
+                pipe(context.Request.Url.ToString(),
                     context.Request.HttpMethod,
                     context.Request.Headers.ToKeyValuePairs(),
                     context.Request.InputStream.ToBytes(),
                     (statusCode, statusDescription, headers, body) => Respond(context, statusCode, statusDescription, headers, body), null);
 
-                _listener.BeginGetContext(GotContext, null);
+                _listener.BeginGetContext(GotContext, pipe);
             }
             catch (Exception ex)
             {
@@ -81,6 +81,11 @@ namespace CRack
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)_listener).Dispose();
         }
 
     }

@@ -7,18 +7,30 @@ using System.Threading;
 
 namespace CRack
 {
-    class CRacker : IDisposable
+    public class CRacker
     {
-        readonly HttpListener _listener;
+        private readonly Action<Pipe> _starter;
+        private readonly Action _stopper;
         RequestHandler _handler;
-        private Middleware _middleware;
+        private Pipe _pipe;
 
-        public CRacker(string prefix)
+        public CRacker(Action<Pipe> starter, Action stopper)
         {
-            _listener = new HttpListener();
-            _listener.Prefixes.Add(prefix);
+            if (starter == null) throw new ArgumentNullException("starter");
+            _starter = starter;
+            _stopper = stopper;
             _handler = EmptyHandler;
-            _middleware = (uri, method, headers, body, responseHandler, next) => DefaultMiddleware(uri, method, headers, body, responseHandler, _handler);
+            _pipe = (uri, method, headers, body, responseHandler, next) => DefaultPipe(uri, method, headers, body, responseHandler, _handler);
+        }
+
+        public void Start()
+        {
+            _starter(_pipe);
+        }
+
+        public void Stop()
+        {
+            _stopper();
         }
 
         public void AddHandler(RequestHandler handlerToAdd)
@@ -32,17 +44,17 @@ namespace CRack
             } while (!ReferenceEquals(currentHandler, Interlocked.CompareExchange(ref _handler, newHandler, currentHandler)));
         }
 
-        public void AddMiddleware(Middleware middlewareToAdd)
+        public void AddPipe(Pipe pipeToAdd)
         {
-            Middleware currentMiddleware;
-            Middleware newMiddleware;
+            Pipe currentPipe;
+            Pipe newPipe;
             do
             {
-                currentMiddleware = _middleware;
-                newMiddleware =
-                    (uri, method, headers, body, responseHandler, next) => middlewareToAdd(uri, method, headers, body, responseHandler, currentMiddleware);
+                currentPipe = _pipe;
+                newPipe =
+                    (uri, method, headers, body, responseHandler, next) => pipeToAdd(uri, method, headers, body, responseHandler, currentPipe);
 
-            } while (!ReferenceEquals(currentMiddleware, Interlocked.CompareExchange(ref _middleware, newMiddleware, currentMiddleware)));
+            } while (!ReferenceEquals(currentPipe, Interlocked.CompareExchange(ref _pipe, newPipe, currentPipe)));
             
         }
 
@@ -54,83 +66,12 @@ namespace CRack
                                                          handlerToAdd.InvokeAndForget(url, method, headers, body, responseHandler)));
         }
 
-        public void Start()
-        {
-            _listener.Start();
-            _listener.BeginGetContext(GotContext, null);
-        }
-
-        public void Stop()
-        {
-            try
-            {
-                _listener.Stop();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        private void GotContext(IAsyncResult result)
-        {
-            try
-            {
-                var context = _listener.EndGetContext(result);
-
-                _middleware(context.Request.Url.ToString(),
-                    context.Request.HttpMethod,
-                    context.Request.Headers.ToKeyValuePairs(),
-                    context.Request.InputStream.ToBytes(),
-                    (statusCode, statusDescription, headers, body) => Respond(context, statusCode, statusDescription, headers, body), null);
-
-                _listener.BeginGetContext(GotContext, null);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        static void Respond(HttpListenerContext context, int statusCode, string status, IEnumerable<KeyValuePair<string, string>> headers, byte[] body)
-        {
-            try
-            {
-                context.Response.StatusCode = statusCode;
-                context.Response.StatusDescription = status;
-                foreach (var header in headers)
-                {
-                    if (header.Key.Equals("content-length", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        context.Response.ContentLength64 = long.Parse(header.Value);
-                        continue;
-                    }
-                    if (header.Key.Equals("content-type", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        context.Response.ContentType = header.Value;
-                        continue;
-                    }
-                    context.Response.Headers[header.Key] = header.Value;
-                }
-                context.Response.Close(body, false);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-            }
-        }
-
-        public void Dispose()
-        {
-            ((IDisposable)_listener).Dispose();
-        }
-
         private static void EmptyHandler(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, byte[] body, ResponseHandler responsehandler)
         {
 
         }
 
-        private static void DefaultMiddleware(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, byte[] body, ResponseHandler responseHandler, RequestHandler requestHandler)
+        private static void DefaultPipe(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, byte[] body, ResponseHandler responseHandler, RequestHandler requestHandler)
         {
             requestHandler(uri, method, headers, body, responseHandler);
         }

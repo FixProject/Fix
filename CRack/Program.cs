@@ -10,11 +10,12 @@ namespace CRack
     {
         static void Main()
         {
-            using (var cracker = new CRacker("http://*:1337/"))
+            using (var server = new Server("http://*:1337/"))
             {
+                var cracker = new CRacker(server.Start, server.Stop);
                 cracker.AddHandler(new RequestPrinter().PrintRequest);
                 cracker.AddHandler(new InfoPrinter().PrintInfo);
-                cracker.AddMiddleware(new MethodDownshifter().DownshiftMethod);
+                cracker.AddPipe(new MethodDownshifter().DownshiftMethod);
                 cracker.Start();
                 Console.Write("Running. Press Enter to stop.");
                 Console.ReadLine();
