@@ -9,7 +9,7 @@ This is a Console application which runs a web server using CRack:
     {
         static void Main()
         {
-            using (var server = new Server("http://*:8080/"))
+            using (var server = new Server("http://*:81/"))
             {
                 var cracker = new CRacker(server.Start, server.Stop);
                 cracker.AddHandler(new RequestPrinter().PrintRequest);
@@ -26,7 +26,7 @@ CRacker, Server and RequestPrinter are all in separate assemblies, with no depen
     {
         static void Main()
         {
-            using (var server = new Server("http://*:1337/"))
+            using (var server = new Server("http://*:81/"))
             {
                 var cracker = new CRacker(server.Start, server.Stop);
                 cracker.AddHandler(new RequestPrinter().PrintRequest);

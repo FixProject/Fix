@@ -14,7 +14,7 @@ namespace CRack
     {
         static void Main()
         {
-            using (var server = new Server("http://*:1337/"))
+            using (var server = new Server("http://*:81/"))
             {
                 var cracker = new CRacker(server.Start, server.Stop);
                 cracker.AddHandler(new RequestPrinter().PrintRequest);
