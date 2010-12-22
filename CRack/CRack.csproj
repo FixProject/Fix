@@ -44,11 +44,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConcurrentSet.cs" />
     <Compile Include="CRacker.cs" />
+    <Compile Include="InfoPrinter.cs" />
+    <Compile Include="MethodDownshifter.cs" />
+    <Compile Include="Middleware.cs" />
     <Compile Include="NameValueCollectionEx.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RequestProcessor.cs" />
+    <Compile Include="RequestHandler.cs" />
+    <Compile Include="RequestPrinter.cs" />
+    <Compile Include="ResponseHandler.cs" />
     <Compile Include="StreamEx.cs" />
   </ItemGroup>
   <ItemGroup>
