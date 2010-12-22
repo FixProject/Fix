@@ -2,18 +2,21 @@
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{AE24B4A3-30AE-4479-BB37-A37BB65BFBC0}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{B7F7506F-0292-464F-95F6-2AD47865C79E}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CRack</RootNamespace>
-    <AssemblyName>CRack</AssemblyName>
+    <RootNamespace>CRackConsole</RootNamespace>
+    <AssemblyName>CRackConsole</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,7 +25,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -40,9 +44,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CRacker.cs" />
-    <Compile Include="InvokeAndForget.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CRack\CRack.csproj">
+      <Project>{AE24B4A3-30AE-4479-BB37-A37BB65BFBC0}</Project>
+      <Name>CRack</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Info\Info.csproj">
+      <Project>{606BAC3F-F5A2-46A9-AFFB-EDF7231850FD}</Project>
+      <Name>Info</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Print\Print.csproj">
+      <Project>{0316D0F1-EF56-41DE-A501-68DC0DFF8E5E}</Project>
+      <Name>Print</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestModule\TestModule.csproj">
+      <Project>{09082961-1494-4A68-9BD2-90454F41E0C5}</Project>
+      <Name>TestModule</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TestServer\TestServer.csproj">
+      <Project>{CAFD0C47-ADF9-43F6-BCA5-8FF093B98386}</Project>
+      <Name>TestServer</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

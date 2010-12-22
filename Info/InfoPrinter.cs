@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
-namespace CRack
+namespace Info
 {
     public class InfoPrinter
     {
         public void PrintInfo(string uri, string method, IEnumerable<KeyValuePair<string, string>> requestHeaders, byte[] body,
-            ResponseHandler responseHandler)
+            Action<int, string, IEnumerable<KeyValuePair<string, string>>, byte[]> responseHandler)
         {
             if (uri.ToLower().Contains("/info"))
             {

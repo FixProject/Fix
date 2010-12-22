@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace CRack
+namespace TestServer
 {
     static class StreamEx
     {

@@ -5,11 +5,11 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{AE24B4A3-30AE-4479-BB37-A37BB65BFBC0}</ProjectGuid>
+    <ProjectGuid>{09082961-1494-4A68-9BD2-90454F41E0C5}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CRack</RootNamespace>
-    <AssemblyName>CRack</AssemblyName>
+    <RootNamespace>TestModule</RootNamespace>
+    <AssemblyName>TestModule</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -40,8 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CRacker.cs" />
-    <Compile Include="InvokeAndForget.cs" />
+    <Compile Include="MethodDownshifter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

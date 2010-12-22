@@ -2,7 +2,7 @@
 using System.Collections.Specialized;
 using System.Linq;
 
-namespace CRack
+namespace TestServer
 {
     static class NameValueCollectionEx
     {

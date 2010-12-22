@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Text;
-using System.Threading.Tasks;
+using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>;
 
-namespace CRack
+namespace Print
 {
-    class RequestPrinter
+    public class RequestPrinter
     {
         public void PrintRequest(string uri, string method, IEnumerable<KeyValuePair<string, string>> requestHeaders, byte[] body,
             ResponseHandler responseHandler)

@@ -4,6 +4,9 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using Pipe = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[], System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>, System.Delegate>;
+using RequestHandler = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[], System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>>;
+using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>;
 
 namespace CRack
 {
@@ -17,6 +20,8 @@ namespace CRack
         public CRacker(Action<Pipe> starter, Action stopper)
         {
             if (starter == null) throw new ArgumentNullException("starter");
+            if (stopper == null) throw new ArgumentNullException("stopper");
+
             _starter = starter;
             _stopper = stopper;
             _handler = EmptyHandler;
