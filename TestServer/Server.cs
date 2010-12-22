@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Pipe = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[], System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>, System.Delegate>;
-using RequestHandler = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[], System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>>;
-using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>;
+using Pipe = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
+using RequestHandler = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
+using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace TestServer
 {
@@ -47,7 +47,7 @@ namespace TestServer
                 pipe(context.Request.Url.ToString(),
                     context.Request.HttpMethod,
                     context.Request.Headers.ToKeyValuePairs(),
-                    context.Request.InputStream.ToBytes(),
+                    () => context.Request.InputStream.ToBytes(),
                     (statusCode, statusDescription, headers, body) => Respond(context, statusCode, statusDescription, headers, body), null);
 
                 _listener.BeginGetContext(GotContext, pipe);
@@ -58,7 +58,7 @@ namespace TestServer
             }
         }
 
-        static void Respond(HttpListenerContext context, int statusCode, string status, IEnumerable<KeyValuePair<string, string>> headers, byte[] body)
+        static void Respond(HttpListenerContext context, int statusCode, string status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
         {
             try
             {
@@ -78,7 +78,7 @@ namespace TestServer
                     }
                     context.Response.Headers[header.Key] = header.Value;
                 }
-                context.Response.Close(body, false);
+                context.Response.Close(body(), false);
             }
             catch (Exception ex)
             {

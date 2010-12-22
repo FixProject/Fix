@@ -4,9 +4,9 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
-using Pipe = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[], System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>, System.Delegate>;
-using RequestHandler = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[], System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>>;
-using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>;
+using Pipe = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
+using RequestHandler = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
+using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace CRack
 {
@@ -71,12 +71,12 @@ namespace CRack
                                                          handlerToAdd.InvokeAndForget(url, method, headers, body, responseHandler)));
         }
 
-        private static void EmptyHandler(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, byte[] body, ResponseHandler responsehandler)
+        private static void EmptyHandler(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body, ResponseHandler responsehandler)
         {
 
         }
 
-        private static void DefaultPipe(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, byte[] body, ResponseHandler responseHandler, RequestHandler requestHandler)
+        private static void DefaultPipe(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body, ResponseHandler responseHandler, RequestHandler requestHandler)
         {
             requestHandler(uri, method, headers, body, responseHandler);
         }

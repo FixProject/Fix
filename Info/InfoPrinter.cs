@@ -6,8 +6,8 @@ namespace Info
 {
     public class InfoPrinter
     {
-        public void PrintInfo(string uri, string method, IEnumerable<KeyValuePair<string, string>> requestHeaders, byte[] body,
-            Action<int, string, IEnumerable<KeyValuePair<string, string>>, byte[]> responseHandler)
+        public void PrintInfo(string uri, string method, IEnumerable<KeyValuePair<string, string>> requestHeaders, Func<byte[]> body,
+            Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>> responseHandler)
         {
             if (uri.ToLower().Contains("/info"))
             {
@@ -17,7 +17,7 @@ namespace Info
                                   { "Content-Type", "text/html" },
                                   { "Content-Length", bytes.Length.ToString() }
                               };
-                responseHandler(200, "OK", headers, bytes);
+                responseHandler(200, "OK", headers, () => bytes);
             }
         }
     }

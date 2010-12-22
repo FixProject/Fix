@@ -1,12 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
-using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, byte[]>;
+using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace Print
 {
     public class RequestPrinter
     {
-        public void PrintRequest(string uri, string method, IEnumerable<KeyValuePair<string, string>> requestHeaders, byte[] body,
+        public void PrintRequest(string uri, string method, IEnumerable<KeyValuePair<string, string>> requestHeaders, Func<byte[]> body,
             ResponseHandler responseHandler)
         {
             if (!uri.ToLower().Contains("/info"))
@@ -25,7 +26,7 @@ namespace Print
                                   { "Content-Type", "text/html" },
                                   { "Content-Length", bytes.Length.ToString() }
                               };
-                responseHandler(200, "OK", headers, bytes);
+                responseHandler(200, "OK", headers, () => bytes);
             }
         }
     }
