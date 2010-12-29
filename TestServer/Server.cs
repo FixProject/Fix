@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Infix = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
-using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
-using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
+using Infix = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
+using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace TestServer
 {
@@ -46,7 +46,7 @@ namespace TestServer
 
                 pipe(CreateEnvironmentHash(context.Request),
                     () => context.Request.InputStream.ToBytes(),
-                    (statusCode, statusDescription, headers, body) => Respond(context, statusCode, statusDescription, headers, body), null);
+                    (statusCode, headers, body) => Respond(context, statusCode, headers, body), null);
 
                 _listener.BeginGetContext(GotContext, pipe);
             }
@@ -71,12 +71,12 @@ namespace TestServer
                        };
         }
 
-        static void Respond(HttpListenerContext context, int statusCode, string status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
+        static void Respond(HttpListenerContext context, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
         {
             try
             {
-                context.Response.StatusCode = statusCode;
-                context.Response.StatusDescription = status;
+                context.Response.StatusCode = status;
+                context.Response.StatusDescription = GetStatusText(status);
                 foreach (var header in headers)
                 {
                     if (header.Key.Equals("content-length", StringComparison.CurrentCultureIgnoreCase))
@@ -104,5 +104,14 @@ namespace TestServer
             ((IDisposable)_listener).Dispose();
         }
 
+        private static string GetStatusText(int status)
+        {
+            return StatusTexts.ContainsKey(status) ? StatusTexts[status] : string.Empty;
+        }
+
+        private static readonly Dictionary<int, string> StatusTexts = new Dictionary<int, string>
+                                                                          {
+                                                                              {200, "OK"},
+                                                                          };
     }
 }

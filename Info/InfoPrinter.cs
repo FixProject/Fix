@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace Info
 {
@@ -18,7 +18,7 @@ namespace Info
                                   { "Content-Type", "text/html" },
                                   { "Content-Length", bytes.Length.ToString() }
                               };
-                responseHandler(200, "OK", headers, () => bytes);
+                responseHandler(200, headers, () => bytes);
             }
         }
     }
