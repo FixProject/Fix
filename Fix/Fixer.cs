@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using Infix = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
+using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
+using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
+using Starter = System.Action<System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>>;
 
 namespace Fix
 {
     public class Fixer
     {
-        private readonly Action<Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>, Delegate>> _starter;
+        private readonly Starter _starter;
         private readonly Action _stopper;
-        Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> _handler;
-        private Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>, Delegate> _pipe;
+        RequestHandler _handler;
+        private Infix _infix;
 
-        public Fixer(Action<Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>, Delegate>> starter, Action stopper)
+        public Fixer(Starter starter, Action stopper)
         {
             if (starter == null) throw new ArgumentNullException("starter");
             if (stopper == null) throw new ArgumentNullException("stopper");
@@ -19,12 +23,12 @@ namespace Fix
             _starter = starter;
             _stopper = stopper;
             _handler = EmptyHandler;
-            _pipe = (uri, method, headers, body, responseHandler, next) => DefaultInfix(uri, method, headers, body, responseHandler, _handler);
+            _infix = (env, body, responseHandler, next) => DefaultInfix(env, body, responseHandler, _handler);
         }
 
         public void Start()
         {
-            _starter(_pipe);
+            _starter(_infix);
         }
 
         public void Stop()
@@ -32,10 +36,10 @@ namespace Fix
             _stopper();
         }
 
-        public void AddHandler(Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> handlerToAdd)
+        public void AddHandler(RequestHandler handlerToAdd)
         {
-            Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> currentHandler;
-            Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> newHandler;
+            RequestHandler currentHandler;
+            RequestHandler newHandler;
             do
             {
                 currentHandler = _handler;
@@ -43,36 +47,36 @@ namespace Fix
             } while (!ReferenceEquals(currentHandler, Interlocked.CompareExchange(ref _handler, newHandler, currentHandler)));
         }
 
-        public void AddInfix(Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>, Delegate> pipeToAdd)
+        public void AddInfix(Infix infixToAdd)
         {
-            Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>, Delegate> currentInfix;
-            Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>, Delegate> newInfix;
+            Infix currentInfix;
+            Infix newInfix;
             do
             {
-                currentInfix = _pipe;
+                currentInfix = _infix;
                 newInfix =
-                    (uri, method, headers, body, responseHandler, next) => pipeToAdd(uri, method, headers, body, responseHandler, currentInfix);
+                    (env, body, responseHandler, next) => infixToAdd(env, body, responseHandler, currentInfix);
 
-            } while (!ReferenceEquals(currentInfix, Interlocked.CompareExchange(ref _pipe, newInfix, currentInfix)));
+            } while (!ReferenceEquals(currentInfix, Interlocked.CompareExchange(ref _infix, newInfix, currentInfix)));
             
         }
 
-        private static Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> GetNewHandler(Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> currentHandler, Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> handlerToAdd)
+        private static RequestHandler GetNewHandler(RequestHandler currentHandler, RequestHandler handlerToAdd)
         {
-            return (Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>>) Delegate.Combine(currentHandler,
-                                                     new Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>>(
-                                                         (url, method, headers, body, responseHandler) =>
-                                                         handlerToAdd.InvokeAndForget(url, method, headers, body, responseHandler)));
+            return (RequestHandler) Delegate.Combine(currentHandler,
+                                                     new RequestHandler(
+                                                         (env, body, responseHandler) =>
+                                                         handlerToAdd.InvokeAndForget(env, body, responseHandler)));
         }
 
-        private static void EmptyHandler(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>> responsehandler)
+        private static void EmptyHandler(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responsehandler)
         {
 
         }
 
-        private static void DefaultInfix(string uri, string method, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>> responseHandler, Action<string, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>, Action<int, string, IEnumerable<KeyValuePair<string, string>>, Func<byte[]>>> requestHandler)
+        private static void DefaultInfix(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responseHandler, RequestHandler requestHandler)
         {
-            requestHandler(uri, method, headers, body, responseHandler);
+            requestHandler(env, body, responseHandler);
         }
     }
 }

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Infix = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
-using RequestHandler = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
+using Infix = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
+using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
 using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace TestServer
@@ -44,9 +44,7 @@ namespace TestServer
                 var context = _listener.EndGetContext(result);
                 var pipe = (Infix) result.AsyncState;
 
-                pipe(context.Request.Url.ToString(),
-                    context.Request.HttpMethod,
-                    context.Request.Headers.ToKeyValuePairs(),
+                pipe(CreateEnvironmentHash(context.Request),
                     () => context.Request.InputStream.ToBytes(),
                     (statusCode, statusDescription, headers, body) => Respond(context, statusCode, statusDescription, headers, body), null);
 
@@ -56,6 +54,21 @@ namespace TestServer
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        private static IDictionary<string,string> CreateEnvironmentHash(HttpListenerRequest request)
+        {
+            return new Dictionary<string, string>
+                       {
+                           {"REQUEST_METHOD", request.HttpMethod},
+                           {"SCRIPT_NAME", request.Url.AbsolutePath},
+                           {"PATH_INFO", string.Empty},
+                           {"QUERY_STRING", request.Url.Query},
+                           {"SERVER_NAME", request.Url.Host},
+                           {"SERVER_PORT", request.Url.Port.ToString()},
+                           {"SERVER_PROTOCOL", "HTTP/" + request.ProtocolVersion.ToString(2)},
+                           {"url_scheme",request.Url.Scheme},
+                       };
         }
 
         static void Respond(HttpListenerContext context, int statusCode, string status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)

@@ -7,15 +7,15 @@ namespace Print
 {
     public class RequestPrinter
     {
-        public void PrintRequest(string uri, string method, IEnumerable<KeyValuePair<string, string>> requestHeaders, Func<byte[]> body,
+        public void PrintRequest(IDictionary<string, string> env, Func<byte[]> body,
             ResponseHandler responseHandler)
         {
-            if (!uri.ToLower().Contains("/info"))
+            if (!env["SCRIPT_NAME"].ToLower().Contains("/info"))
             {
                 var builder = new StringBuilder("<html><body>");
-                builder.AppendFormat("<p>{0}</p>", uri);
-                builder.AppendFormat("<p>{0}</p>", method);
-                foreach (var header in requestHeaders)
+                builder.AppendFormat("<p>{0}</p>", ConstructUri(env));
+                builder.AppendFormat("<p>{0}</p>", env["REQUEST_METHOD"]);
+                foreach (var header in env)
                 {
                     builder.AppendFormat("<p><strong>{0}</strong>: {1}</p>", header.Key, header.Value);
                 }
@@ -28,6 +28,20 @@ namespace Print
                               };
                 responseHandler(200, "OK", headers, () => bytes);
             }
+        }
+
+        private static string ConstructUri(IDictionary<string,string> env)
+        {
+            var builder = new StringBuilder(env["url_scheme"] + "://" + env["SERVER_NAME"]);
+            if (env["SERVER_PORT"] != "80")
+            {
+                builder.AppendFormat(":{0}", env["SERVER_PORT"]);
+            }
+            if (!string.IsNullOrEmpty(env["SCRIPT_NAME"]))
+            {
+                builder.AppendFormat("{0}", env["SCRIPT_NAME"]);
+            }
+            return builder.ToString();
         }
     }
 }

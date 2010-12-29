@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using Fix;
 using Info;
 using Print;
 using TestModule;
 using TestServer;
 
-namespace CRack
+namespace FixConsole
 {
     class Program
     {
