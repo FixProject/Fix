@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Pipe = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
+using Infix = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
 using RequestHandler = System.Action<string, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>, System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
 using ResponseHandler = System.Action<int, string, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
@@ -19,7 +19,7 @@ namespace TestServer
             _listener.Prefixes.Add(prefix);
         }
 
-        public void Start(Pipe pipe)
+        public void Start(Infix pipe)
         {
             _listener.Start();
             _listener.BeginGetContext(GotContext, pipe);
@@ -42,7 +42,7 @@ namespace TestServer
             try
             {
                 var context = _listener.EndGetContext(result);
-                var pipe = (Pipe) result.AsyncState;
+                var pipe = (Infix) result.AsyncState;
 
                 pipe(context.Request.Url.ToString(),
                     context.Request.HttpMethod,

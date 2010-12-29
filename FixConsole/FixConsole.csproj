@@ -8,8 +8,8 @@
     <ProjectGuid>{B7F7506F-0292-464F-95F6-2AD47865C79E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CRackConsole</RootNamespace>
-    <AssemblyName>CRackConsole</AssemblyName>
+    <RootNamespace>FixConsole</RootNamespace>
+    <AssemblyName>FixConsole</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -51,9 +51,9 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CRack\CRack.csproj">
+    <ProjectReference Include="..\Fix\Fix.csproj">
       <Project>{AE24B4A3-30AE-4479-BB37-A37BB65BFBC0}</Project>
-      <Name>CRack</Name>
+      <Name>Fix</Name>
     </ProjectReference>
     <ProjectReference Include="..\Info\Info.csproj">
       <Project>{606BAC3F-F5A2-46A9-AFFB-EDF7231850FD}</Project>

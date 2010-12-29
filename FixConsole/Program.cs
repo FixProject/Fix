@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using Fix;
 using Info;
 using Print;
 using TestModule;
@@ -16,14 +17,14 @@ namespace CRack
         {
             using (var server = new Server("http://*:81/"))
             {
-                var cracker = new CRacker(server.Start, server.Stop);
-                cracker.AddHandler(new RequestPrinter().PrintRequest);
-                cracker.AddHandler(new InfoPrinter().PrintInfo);
-                cracker.AddPipe(new MethodDownshifter().DownshiftMethod);
-                cracker.Start();
+                var fixer = new Fixer(server.Start, server.Stop);
+                fixer.AddHandler(new RequestPrinter().PrintRequest);
+                fixer.AddHandler(new InfoPrinter().PrintInfo);
+                fixer.AddInfix(new MethodDownshifter().DownshiftMethod);
+                fixer.Start();
                 Console.Write("Running. Press Enter to stop.");
                 Console.ReadLine();
-                cracker.Stop();
+                fixer.Stop();
             }
         }
     }
