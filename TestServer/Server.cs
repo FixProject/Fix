@@ -19,10 +19,10 @@ namespace TestServer
             _listener.Prefixes.Add(prefix);
         }
 
-        public void Start(Infix pipe)
+        public void Start(Infix infix)
         {
             _listener.Start();
-            _listener.BeginGetContext(GotContext, pipe);
+            _listener.BeginGetContext(GotContext, infix);
         }
 
         public void Stop()
@@ -42,15 +42,15 @@ namespace TestServer
             try
             {
                 var context = _listener.EndGetContext(result);
-                var pipe = (Infix) result.AsyncState;
+                var infix = (Infix) result.AsyncState;
                 var env = CreateEnvironmentHash(context.Request);
-                pipe(env,
+                infix(env,
                     () => context.Request.InputStream.ToBytes(),
                     (statusCode, headers, body) => Respond(context, env, statusCode, headers, body),
                     exception => HandleException(context, env, exception),
                     null);
 
-                _listener.BeginGetContext(GotContext, pipe);
+                _listener.BeginGetContext(GotContext, infix);
             }
             catch (Exception ex)
             {
