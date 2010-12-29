@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Infix = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
-using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
+using Infix = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
+using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace TestServer
@@ -43,10 +43,12 @@ namespace TestServer
             {
                 var context = _listener.EndGetContext(result);
                 var pipe = (Infix) result.AsyncState;
-
-                pipe(CreateEnvironmentHash(context.Request),
+                var env = CreateEnvironmentHash(context.Request);
+                pipe(env,
                     () => context.Request.InputStream.ToBytes(),
-                    (statusCode, headers, body) => Respond(context, statusCode, headers, body), null);
+                    (statusCode, headers, body) => Respond(context, env, statusCode, headers, body),
+                    exception => HandleException(context, env, exception),
+                    null);
 
                 _listener.BeginGetContext(GotContext, pipe);
             }
@@ -71,7 +73,7 @@ namespace TestServer
                        };
         }
 
-        static void Respond(HttpListenerContext context, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
+        static void Respond(HttpListenerContext context, IDictionary<string,string> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
         {
             try
             {
@@ -97,6 +99,11 @@ namespace TestServer
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        static void HandleException(HttpListenerContext context, IDictionary<string,string> env, Exception exception)
+        {
+            
         }
 
         public void Dispose()

@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Infix = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>;
-using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>>;
+using Infix = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
+using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
-using Starter = System.Action<System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Delegate>>;
+using Starter = System.Action<System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>>;
 
 namespace Fix
 {
@@ -23,7 +23,7 @@ namespace Fix
             _starter = starter;
             _stopper = stopper;
             _handler = EmptyHandler;
-            _infix = (env, body, responseHandler, next) => DefaultInfix(env, body, responseHandler, _handler);
+            _infix = (env, body, responseHandler, exceptionHandler, next) => DefaultInfix(env, body, responseHandler, exceptionHandler, _handler);
         }
 
         public void Start()
@@ -55,7 +55,7 @@ namespace Fix
             {
                 currentInfix = _infix;
                 newInfix =
-                    (env, body, responseHandler, next) => infixToAdd(env, body, responseHandler, currentInfix);
+                    (env, body, responseHandler, exceptionHandler, next) => infixToAdd(env, body, responseHandler, exceptionHandler, currentInfix);
 
             } while (!ReferenceEquals(currentInfix, Interlocked.CompareExchange(ref _infix, newInfix, currentInfix)));
             
@@ -65,18 +65,18 @@ namespace Fix
         {
             return (RequestHandler) Delegate.Combine(currentHandler,
                                                      new RequestHandler(
-                                                         (env, body, responseHandler) =>
-                                                         handlerToAdd.InvokeAndForget(env, body, responseHandler)));
+                                                         (env, body, responseHandler, exceptionHandler) =>
+                                                         handlerToAdd.InvokeAndForget(env, body, responseHandler, exceptionHandler)));
         }
 
-        private static void EmptyHandler(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responsehandler)
+        private static void EmptyHandler(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responsehandler, Action<Exception> exceptionHandler)
         {
 
         }
 
-        private static void DefaultInfix(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responseHandler, RequestHandler requestHandler)
+        private static void DefaultInfix(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, RequestHandler requestHandler)
         {
-            requestHandler(env, body, responseHandler);
+            requestHandler(env, body, responseHandler, exceptionHandler);
         }
     }
 }
