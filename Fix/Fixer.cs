@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Threading;
 using Infix = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
 using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>>;
@@ -12,8 +13,16 @@ namespace Fix
     {
         private readonly Starter _starter;
         private readonly Action _stopper;
+        private int _startCallCount;
+        private int _handlerCount;
         RequestHandler _handler;
         private Infix _infix;
+
+        [ImportMany]
+        private IEnumerable<RequestHandler> _handlers;
+
+        [ImportMany]
+        private IEnumerable<Infix> _infixes;
 
         public Fixer(Starter starter, Action stopper)
         {
@@ -23,17 +32,30 @@ namespace Fix
             _starter = starter;
             _stopper = stopper;
             _handler = EmptyHandler;
-            _infix = (env, body, responseHandler, exceptionHandler, next) => DefaultInfix(env, body, responseHandler, exceptionHandler, _handler);
+            _infix = (env, body, responseHandler, exceptionHandler, next) => DefaultInfix(env, body, responseHandler, exceptionHandler, () => _handler);
         }
 
         public void Start()
         {
+            if (Interlocked.Increment(ref _startCallCount) > 1) throw new InvalidOperationException("Fixer has been used.");
+            AddImportedInfixes();
+            AddImportedHandlers();
+            if (_handlerCount == 0) throw new InvalidOperationException("No handlers attached.");
             _starter(_infix);
         }
 
         public void Stop()
         {
             _stopper();
+        }
+
+        private void AddImportedHandlers()
+        {
+            if (_handlers == null) return;
+            foreach (var handler in _handlers)
+            {
+                AddHandler(handler);
+            }
         }
 
         public void AddHandler(RequestHandler handlerToAdd)
@@ -45,6 +67,16 @@ namespace Fix
                 currentHandler = _handler;
                 newHandler = GetNewHandler(currentHandler, handlerToAdd);
             } while (!ReferenceEquals(currentHandler, Interlocked.CompareExchange(ref _handler, newHandler, currentHandler)));
+            _handlerCount++;
+        }
+
+        private void AddImportedInfixes()
+        {
+            if (_infixes == null) return;
+            foreach (var infix in _infixes)
+            {
+                AddInfix(infix);
+            }
         }
 
         public void AddInfix(Infix infixToAdd)
@@ -74,9 +106,9 @@ namespace Fix
 
         }
 
-        private static void DefaultInfix(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, RequestHandler requestHandler)
+        private static void DefaultInfix(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Func<RequestHandler> requestHandler)
         {
-            requestHandler(env, body, responseHandler, exceptionHandler);
+            requestHandler()(env, body, responseHandler, exceptionHandler);
         }
     }
 }
