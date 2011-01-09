@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>;
 
 namespace TestServer
 {
@@ -46,7 +47,6 @@ namespace TestServer
                 app.BeginInvoke(env,
                     () => context.Request.InputStream.ToBytes(),
                     (statusCode, headers, body) => Respond(context, env, statusCode, headers, body),
-                    exception => HandleException(context, env, exception),
                     null, app.EndInvoke, null);
 
                 _listener.BeginGetContext(GotContext, app);
@@ -70,7 +70,7 @@ namespace TestServer
             yield return new KeyValuePair<string, object>("url_scheme", request.Url.Scheme);
         }
 
-        static void Respond(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
+        static void Respond(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, IObservable<byte[]> body)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace TestServer
                         context.Response.Headers[header.Key] = header.Value;
                     }
                 }
-                context.Response.Close(body(), false);
+                body.Subscribe(new BodyObserver(context));
             }
             catch (Exception ex)
             {
@@ -120,5 +120,30 @@ namespace TestServer
                                                                           {
                                                                               {200, "OK"},
                                                                           };
+
+        private class BodyObserver : IObserver<byte[]>
+        {
+            private readonly HttpListenerContext _context;
+
+            public BodyObserver(HttpListenerContext context)
+            {
+                _context = context;
+            }
+
+            public void OnNext(byte[] value)
+            {
+                _context.Response.OutputStream.Write(value, 0, value.Length);
+            }
+
+            public void OnError(Exception error)
+            {
+                _context.Response.Close();
+            }
+
+            public void OnCompleted()
+            {
+                _context.Response.Close();
+            }
+        }
     }
 }

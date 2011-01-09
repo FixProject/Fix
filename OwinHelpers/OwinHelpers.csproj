@@ -44,7 +44,10 @@
     <Compile Include="DictionaryExtensions.cs" />
     <Compile Include="EnumerableDictionaryExtension.cs" />
     <Compile Include="EnvironmentExtensions.cs" />
+    <Compile Include="ExceptionBody.cs" />
+    <Compile Include="NullDisposable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StringBody.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

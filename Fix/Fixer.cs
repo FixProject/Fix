@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
-using Starter = System.Action<System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>;
+using Starter = System.Action<System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>>;
 
 namespace Fix
 {
@@ -30,7 +30,7 @@ namespace Fix
 
             _starter = starter;
             _stopper = stopper;
-            _app = (env, body, responseHandler, exceptionHandler, next) => DefaultInfix(env, body, responseHandler, exceptionHandler, () => EmptyHandler);
+            _app = (env, body, responseHandler, next) => DefaultInfix(env, body, responseHandler, () => EmptyHandler);
         }
 
         public void Start()
@@ -84,20 +84,20 @@ namespace Fix
             {
                 currentApp = _app;
                 newApp =
-                    (env, body, responseHandler, exceptionHandler, next) => appToAdd(env, body, responseHandler, exceptionHandler, currentApp);
+                    (env, body, responseHandler, next) => appToAdd(env, body, responseHandler, currentApp);
 
             } while (!ReferenceEquals(currentApp, Interlocked.CompareExchange(ref _app, newApp, currentApp)));
             
         }
 
-        private static void EmptyHandler(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
+        private static void EmptyHandler(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Delegate next)
         {
             responseHandler(500, null, null);
         }
 
-        private static void DefaultInfix(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Func<App> requestHandler)
+        private static void DefaultInfix(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Func<App> requestHandler)
         {
-            requestHandler()(env, body, responseHandler, exceptionHandler, null);
+            requestHandler()(env, body, responseHandler, null);
         }
     }
 }

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Text;
 using OwinHelpers;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>;
 
 namespace Print
 {
@@ -12,7 +12,7 @@ namespace Print
     {
         [Export("Owin.Application")]
         public void PrintRequest(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body,
-            ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
+            ResponseHandler responseHandler, Delegate next)
         {
             try
             {
@@ -22,12 +22,12 @@ namespace Print
                 }
                 else
                 {
-                    next.InvokeAsNextApp(env, body, responseHandler, exceptionHandler);
+                    next.InvokeAsNextApp(env, body, responseHandler);
                 }
             }
             catch (Exception ex)
             {
-                exceptionHandler(ex);
+                responseHandler(0, null, new ExceptionBody(ex));
             }
         }
 
@@ -41,13 +41,13 @@ namespace Print
                 builder.AppendFormat("<p><strong>{0}</strong>: {1}</p>", header.Key, header.Value);
             }
             builder.Append("</body></html>");
-            var bytes = Encoding.UTF8.GetBytes(builder.ToString());
+            var body = new StringBody(builder.ToString());
             var headers = new Dictionary<string, string>
                               {
                                   { "Content-Type", "text/html" },
-                                  { "Content-Length", bytes.Length.ToString() }
+                                  { "Content-Length", body.Length.ToString() }
                               };
-            responseHandler(200, headers, () => bytes);
+            responseHandler(200, headers, body);
         }
 
         private static string ConstructUri(IDictionary<string,object> env)
