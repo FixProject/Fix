@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Infix = System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
-using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>>;
+using App = System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace TestServer
@@ -19,10 +18,10 @@ namespace TestServer
             _listener.Prefixes.Add(prefix);
         }
 
-        public void Start(Infix infix)
+        public void Start(App app)
         {
             _listener.Start();
-            _listener.BeginGetContext(GotContext, infix);
+            _listener.BeginGetContext(GotContext, app);
         }
 
         public void Stop()
@@ -42,15 +41,15 @@ namespace TestServer
             try
             {
                 var context = _listener.EndGetContext(result);
-                var infix = (Infix) result.AsyncState;
+                var app = (App) result.AsyncState;
                 var env = CreateEnvironmentHash(context.Request);
-                infix(env,
+                app.BeginInvoke(env,
                     () => context.Request.InputStream.ToBytes(),
                     (statusCode, headers, body) => Respond(context, env, statusCode, headers, body),
                     exception => HandleException(context, env, exception),
-                    null);
+                    null, app.EndInvoke, null);
 
-                _listener.BeginGetContext(GotContext, infix);
+                _listener.BeginGetContext(GotContext, app);
             }
             catch (Exception ex)
             {

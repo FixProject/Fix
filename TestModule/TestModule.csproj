@@ -44,6 +44,12 @@
     <Compile Include="MethodDownshifter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OwinHelpers\OwinHelpers.csproj">
+      <Project>{92C89FAF-D1F0-4E9E-B2C6-49D7587E01B3}</Project>
+      <Name>OwinHelpers</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
