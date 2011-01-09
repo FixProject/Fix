@@ -41,6 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DelegateExtensions.cs" />
+    <Compile Include="DictionaryExtensions.cs" />
+    <Compile Include="EnumerableDictionaryExtension.cs" />
+    <Compile Include="EnvironmentExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

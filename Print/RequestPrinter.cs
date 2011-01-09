@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Text;
 using OwinHelpers;
-using App = System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace Print
@@ -11,14 +11,14 @@ namespace Print
     public class RequestPrinter
     {
         [Export("Owin.Application")]
-        public void PrintRequest(IDictionary<string, object> env, Func<byte[]> body,
+        public void PrintRequest(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body,
             ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
         {
             try
             {
-                if (!env["SCRIPT_NAME"].ToString().ToLower().Contains("/info"))
+                if (!env.GetScriptName().ToLower().Contains("/info"))
                 {
-                    HandlePrintRequest(env, responseHandler);
+                    HandlePrintRequest(env.ToDictionary(), responseHandler);
                 }
                 else
                 {
@@ -31,7 +31,7 @@ namespace Print
             }
         }
 
-        private static void HandlePrintRequest(IDictionary<string, object> env, ResponseHandler responseHandler)
+        private static void HandlePrintRequest(IDictionary<string,object> env, ResponseHandler responseHandler)
         {
             var builder = new StringBuilder("<html><body>");
             builder.AppendFormat("<p>{0}</p>", ConstructUri(env));

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
-using App = System.Action<System.Collections.Generic.IDictionary<string,object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
-using Starter = System.Action<System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>>;
+using Starter = System.Action<System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>>;
 
 namespace Fix
 {
@@ -15,7 +15,6 @@ namespace Fix
         private readonly Action _stopper;
         private int _startCallCount;
         private int _handlerCount;
-        App _handler;
         private App _app;
 
         [ImportMany("Owin.Application")]
@@ -31,8 +30,7 @@ namespace Fix
 
             _starter = starter;
             _stopper = stopper;
-            _handler = EmptyHandler;
-            _app = (env, body, responseHandler, exceptionHandler, next) => DefaultInfix(env, body, responseHandler, exceptionHandler, () => _handler);
+            _app = (env, body, responseHandler, exceptionHandler, next) => DefaultInfix(env, body, responseHandler, exceptionHandler, () => EmptyHandler);
         }
 
         public void Start()
@@ -92,12 +90,12 @@ namespace Fix
             
         }
 
-        private static void EmptyHandler(IDictionary<string, object> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
+        private static void EmptyHandler(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
         {
             responseHandler(500, null, null);
         }
 
-        private static void DefaultInfix(IDictionary<string, object> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Func<App> requestHandler)
+        private static void DefaultInfix(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Func<App> requestHandler)
         {
             requestHandler()(env, body, responseHandler, exceptionHandler, null);
         }

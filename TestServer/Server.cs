@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using App = System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace TestServer
@@ -57,22 +57,20 @@ namespace TestServer
             }
         }
 
-        private static IDictionary<string,object> CreateEnvironmentHash(HttpListenerRequest request)
+        private static IEnumerable<KeyValuePair<string,object>> CreateEnvironmentHash(HttpListenerRequest request)
         {
-            return new Dictionary<string, object>
-                       {
-                           {"REQUEST_METHOD", request.HttpMethod},
-                           {"SCRIPT_NAME", request.Url.AbsolutePath},
-                           {"PATH_INFO", string.Empty},
-                           {"QUERY_STRING", request.Url.Query},
-                           {"SERVER_NAME", request.Url.Host},
-                           {"SERVER_PORT", request.Url.Port.ToString()},
-                           {"SERVER_PROTOCOL", "HTTP/" + request.ProtocolVersion.ToString(2)},
-                           {"url_scheme",request.Url.Scheme},
-                       };
+            yield return new KeyValuePair<string, object>("REQUEST_METHOD", request.HttpMethod);
+            yield return new KeyValuePair<string, object>("SCRIPT_NAME", request.Url.AbsolutePath);
+            yield return new KeyValuePair<string, object>("PATH_INFO", string.Empty);
+            yield return new KeyValuePair<string, object>("QUERY_STRING", request.Url.Query);
+            yield return new KeyValuePair<string, object>("SERVER_NAME", request.Url.Host);
+            yield return new KeyValuePair<string, object>("SERVER_PORT", request.Url.Port.ToString());
+            yield return
+                new KeyValuePair<string, object>("SERVER_PROTOCOL", "HTTP/" + request.ProtocolVersion.ToString(2));
+            yield return new KeyValuePair<string, object>("url_scheme", request.Url.Scheme);
         }
 
-        static void Respond(HttpListenerContext context, IDictionary<string,object> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
+        static void Respond(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
         {
             try
             {
@@ -103,7 +101,7 @@ namespace TestServer
             }
         }
 
-        static void HandleException(HttpListenerContext context, IDictionary<string,object> env, Exception exception)
+        static void HandleException(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, Exception exception)
         {
             
         }
