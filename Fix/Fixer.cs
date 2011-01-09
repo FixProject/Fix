@@ -2,10 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading;
-using Infix = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
-using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string,string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>>;
+using App = System.Action<System.Collections.Generic.IDictionary<string,object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
-using Starter = System.Action<System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>>;
+using Starter = System.Action<System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>>;
 
 namespace Fix
 {
@@ -15,14 +14,14 @@ namespace Fix
         private readonly Action _stopper;
         private int _startCallCount;
         private int _handlerCount;
-        RequestHandler _handler;
-        private Infix _infix;
+        App _handler;
+        private App _infix;
 
-        [ImportMany]
-        private IEnumerable<RequestHandler> _handlers;
+        [ImportMany("Owin.Application")]
+        private IEnumerable<App> _handlers;
 
-        [ImportMany]
-        private IEnumerable<Infix> _infixes;
+        [ImportMany("Owin.Middleware")]
+        private IEnumerable<App> _infixes;
 
         public Fixer(Starter starter, Action stopper)
         {
@@ -58,10 +57,10 @@ namespace Fix
             }
         }
 
-        public void AddHandler(RequestHandler handlerToAdd)
+        public void AddHandler(App handlerToAdd)
         {
-            RequestHandler currentHandler;
-            RequestHandler newHandler;
+            App currentHandler;
+            App newHandler;
             do
             {
                 currentHandler = _handler;
@@ -79,10 +78,10 @@ namespace Fix
             }
         }
 
-        public void AddInfix(Infix infixToAdd)
+        public void AddInfix(App infixToAdd)
         {
-            Infix currentInfix;
-            Infix newInfix;
+            App currentInfix;
+            App newInfix;
             do
             {
                 currentInfix = _infix;
@@ -93,22 +92,22 @@ namespace Fix
             
         }
 
-        private static RequestHandler GetNewHandler(RequestHandler currentHandler, RequestHandler handlerToAdd)
+        private static App GetNewHandler(App currentHandler, App handlerToAdd)
         {
-            return (RequestHandler) Delegate.Combine(currentHandler,
-                                                     new RequestHandler(
-                                                         (env, body, responseHandler, exceptionHandler) =>
-                                                         handlerToAdd.InvokeAndForget(env, body, responseHandler, exceptionHandler)));
+            return (App)Delegate.Combine(currentHandler,
+                                                     new App(
+                                                         (env, body, responseHandler, exceptionHandler, next) =>
+                                                         handlerToAdd.InvokeAndForget(env, body, responseHandler, exceptionHandler, next)));
         }
 
-        private static void EmptyHandler(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responsehandler, Action<Exception> exceptionHandler)
+        private static void EmptyHandler(IDictionary<string, object> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
         {
-
+            responseHandler(500, null, null);
         }
 
-        private static void DefaultInfix(IDictionary<string, string> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Func<RequestHandler> requestHandler)
+        private static void DefaultInfix(IDictionary<string, object> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Func<App> requestHandler)
         {
-            requestHandler()(env, body, responseHandler, exceptionHandler);
+            requestHandler()(env, body, responseHandler, exceptionHandler, null);
         }
     }
 }

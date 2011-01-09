@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Text;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
@@ -7,12 +8,13 @@ namespace Print
 {
     public class RequestPrinter
     {
-        public void PrintRequest(IDictionary<string, string> env, Func<byte[]> body,
-            ResponseHandler responseHandler, Action<Exception> exceptionHandler)
+        [Export("Owin.Application")]
+        public void PrintRequest(IDictionary<string, object> env, Func<byte[]> body,
+            ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
         {
             try
             {
-                if (!env["SCRIPT_NAME"].ToLower().Contains("/info"))
+                if (!env["SCRIPT_NAME"].ToString().ToLower().Contains("/info"))
                 {
                     var builder = new StringBuilder("<html><body>");
                     builder.AppendFormat("<p>{0}</p>", ConstructUri(env));
@@ -37,14 +39,14 @@ namespace Print
             }
         }
 
-        private static string ConstructUri(IDictionary<string,string> env)
+        private static string ConstructUri(IDictionary<string,object> env)
         {
             var builder = new StringBuilder(env["url_scheme"] + "://" + env["SERVER_NAME"]);
-            if (env["SERVER_PORT"] != "80")
+            if (env["SERVER_PORT"].ToString() != "80")
             {
                 builder.AppendFormat(":{0}", env["SERVER_PORT"]);
             }
-            if (!string.IsNullOrEmpty(env["SCRIPT_NAME"]))
+            if (!string.IsNullOrEmpty(env["SCRIPT_NAME"].ToString()))
             {
                 builder.AppendFormat("{0}", env["SCRIPT_NAME"]);
             }

@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
-using Infix = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
-using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, string>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>>;
+using Infix = System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>, System.Delegate>;
+using RequestHandler = System.Action<System.Collections.Generic.IDictionary<string, object>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>, System.Action<System.Exception>>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Func<byte[]>>;
 
 namespace TestServer
@@ -58,9 +58,9 @@ namespace TestServer
             }
         }
 
-        private static IDictionary<string,string> CreateEnvironmentHash(HttpListenerRequest request)
+        private static IDictionary<string,object> CreateEnvironmentHash(HttpListenerRequest request)
         {
-            return new Dictionary<string, string>
+            return new Dictionary<string, object>
                        {
                            {"REQUEST_METHOD", request.HttpMethod},
                            {"SCRIPT_NAME", request.Url.AbsolutePath},
@@ -73,25 +73,28 @@ namespace TestServer
                        };
         }
 
-        static void Respond(HttpListenerContext context, IDictionary<string,string> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
+        static void Respond(HttpListenerContext context, IDictionary<string,object> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Func<byte[]> body)
         {
             try
             {
                 context.Response.StatusCode = status;
                 context.Response.StatusDescription = GetStatusText(status);
-                foreach (var header in headers)
+                if (headers != null)
                 {
-                    if (header.Key.Equals("content-length", StringComparison.CurrentCultureIgnoreCase))
+                    foreach (var header in headers)
                     {
-                        context.Response.ContentLength64 = long.Parse(header.Value);
-                        continue;
+                        if (header.Key.Equals("content-length", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            context.Response.ContentLength64 = long.Parse(header.Value);
+                            continue;
+                        }
+                        if (header.Key.Equals("content-type", StringComparison.CurrentCultureIgnoreCase))
+                        {
+                            context.Response.ContentType = header.Value;
+                            continue;
+                        }
+                        context.Response.Headers[header.Key] = header.Value;
                     }
-                    if (header.Key.Equals("content-type", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        context.Response.ContentType = header.Value;
-                        continue;
-                    }
-                    context.Response.Headers[header.Key] = header.Value;
                 }
                 context.Response.Close(body(), false);
             }
@@ -101,7 +104,7 @@ namespace TestServer
             }
         }
 
-        static void HandleException(HttpListenerContext context, IDictionary<string,string> env, Exception exception)
+        static void HandleException(HttpListenerContext context, IDictionary<string,object> env, Exception exception)
         {
             
         }
