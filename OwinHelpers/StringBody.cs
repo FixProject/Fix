@@ -25,8 +25,12 @@ namespace OwinHelpers
 
         public IDisposable Subscribe(IObserver<byte[]> observer)
         {
-            observer.OnNext(_bytes);
-            observer.OnCompleted();
+            Action action = () =>
+                                {
+                                    observer.OnNext(_bytes);
+                                    observer.OnCompleted();
+                                };
+            action.BeginInvoke(action.EndInvoke, null);
             return new NullDisposable();
         }
 

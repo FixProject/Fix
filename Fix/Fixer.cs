@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
+using OwinHelpers;
 using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>;
 using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>;
 using Starter = System.Action<System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>>;
@@ -97,7 +98,14 @@ namespace Fix
 
         private static void DefaultInfix(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Func<App> requestHandler)
         {
-            requestHandler()(env, body, responseHandler, null);
+            try
+            {
+                requestHandler()(env, body, responseHandler, null);
+            }
+            catch (Exception ex)
+            {
+                responseHandler(0, null, new ExceptionBody(ex));
+            }
         }
     }
 }

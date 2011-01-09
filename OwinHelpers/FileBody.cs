@@ -17,6 +17,14 @@ namespace OwinHelpers
 
         public IDisposable Subscribe(IObserver<byte[]> observer)
         {
+            Action action = () => WriteBody(observer);
+            action.BeginInvoke(action.EndInvoke, null);
+
+            return new NullDisposable();
+        }
+
+        private void WriteBody(IObserver<byte[]> observer)
+        {
             try
             {
                 using (var stream = _fileInfo.OpenRead())
@@ -31,8 +39,6 @@ namespace OwinHelpers
             {
                 observer.OnError(ex);
             }
-
-            return new NullDisposable();
         }
     }
 }

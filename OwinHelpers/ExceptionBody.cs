@@ -16,7 +16,8 @@ namespace OwinHelpers
 
         public IDisposable Subscribe(IObserver<byte[]> observer)
         {
-            observer.OnError(_error);
+            Action action = () => observer.OnError(_error);
+            action.BeginInvoke(action.EndInvoke, null);
             return new NullDisposable();
         }
     }
