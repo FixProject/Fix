@@ -33,14 +33,7 @@ namespace Info
 
         private static void HandleRequest(ResponseHandler responseHandler)
         {
-            const string html = "<html><body><h1>This server is running on <a href=\"http://github.com/markrendle/Fix\">Fix</a>.</h1></body></html>";
-            var body = Body.FromString(html);
-            var headers = new Dictionary<string, string>
-                              {
-                                  { "Content-Type", "text/html" },
-                                  { "Content-Length", html.Length.ToString() }
-                              };
-            responseHandler(200, headers, body);
+            responseHandler.WriteHtml(() => "<html><body><h1>This server is running on <a href=\"http://github.com/markrendle/Fix\">Fix</a>.</h1></body></html>");
         }
     }
 }

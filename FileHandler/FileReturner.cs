@@ -36,13 +36,7 @@ namespace FileHandler
         private static void HandleRequest(ResponseHandler responseHandler)
         {
             var fileInfo = new FileInfo(Path.Combine(Environment.CurrentDirectory, "index.html"));
-            var body = Body.FromFile(fileInfo);
-            var headers = new Dictionary<string, string>
-                              {
-                                  { "Content-Type", "text/html" },
-                                  { "Content-Length", fileInfo.Length.ToString() }
-                              };
-            responseHandler(200, headers, body);
+            responseHandler.WriteFile(fileInfo, "text/html");
         }
     }
 }

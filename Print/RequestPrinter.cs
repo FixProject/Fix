@@ -34,6 +34,11 @@ namespace Print
 
         private static void HandlePrintRequest(IDictionary<string,object> env, ResponseHandler responseHandler)
         {
+            responseHandler.WriteHtml(() => BuildHtml(env));
+        }
+
+        private static string BuildHtml(IDictionary<string, object> env)
+        {
             var builder = new StringBuilder("<html><body>");
             builder.AppendFormat("<p>{0}</p>", ConstructUri(env));
             builder.AppendFormat("<p>{0}</p>", env["REQUEST_METHOD"]);
@@ -42,13 +47,7 @@ namespace Print
                 builder.AppendFormat("<p><strong>{0}</strong>: {1}</p>", header.Key, header.Value);
             }
             builder.Append("</body></html>");
-            var body = Body.FromString(builder.ToString());
-            var headers = new Dictionary<string, string>
-                              {
-                                  { "Content-Type", "text/html" },
-                                  { "Content-Length", builder.Length.ToString() }
-                              };
-            responseHandler(200, headers, body);
+            return builder.ToString();
         }
 
         private static string ConstructUri(IDictionary<string,object> env)
