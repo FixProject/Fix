@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>>;
-using Body = System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>;
+using Body = System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>;
 namespace TestServer
 {
     public class Server : IDisposable
@@ -93,8 +93,15 @@ namespace TestServer
                         context.Response.Headers[header.Key] = header.Value;
                     }
                 }
-                var bodyObserver = new BodyObserver(context);
-                body(bodyObserver.OnNext, bodyObserver.OnCompleted, bodyObserver.OnError);
+                if (body != null)
+                {
+                    var bodyObserver = new BodyObserver(context);
+                    body(bodyObserver.OnData, bodyObserver.OnFile, bodyObserver.OnCompleted, bodyObserver.OnError);
+                }
+                else
+                {
+                    context.Response.Close();
+                }
             }
             catch (Exception ex)
             {
@@ -117,7 +124,7 @@ namespace TestServer
                                                                               {200, "OK"},
                                                                           };
 
-        private class BodyObserver : IObserver<ArraySegment<byte>>
+        private class BodyObserver
         {
             private readonly HttpListenerContext _context;
 
@@ -126,9 +133,17 @@ namespace TestServer
                 _context = context;
             }
 
-            public void OnNext(ArraySegment<byte> value)
+            public void OnData(ArraySegment<byte> value)
             {
                 _context.Response.OutputStream.Write(value.Array, value.Offset, value.Count);
+            }
+
+            public void OnFile(FileInfo fileInfo)
+            {
+                using (var stream = fileInfo.OpenRead())
+                {
+                    stream.CopyTo(_context.Response.OutputStream);
+                }
             }
 
             public void OnError(Exception error)

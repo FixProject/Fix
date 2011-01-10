@@ -57,6 +57,10 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FileHandler\FileHandler.csproj">
+      <Project>{88EEAA81-6680-4EAD-B66B-D14667EA3236}</Project>
+      <Name>FileHandler</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Fix\Fix.csproj">
       <Project>{AE24B4A3-30AE-4479-BB37-A37BB65BFBC0}</Project>
       <Name>Fix</Name>
