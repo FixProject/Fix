@@ -7,7 +7,7 @@ namespace OwinHelpers
 {
     public static class ObservableExtensions
     {
-        public static Action<Action<T>, Action, Action<Exception>> ToAction<T>(this IObservable<T> source)
+        public static Action<Action<T> , Action, Action<Exception>> ToAction<T>(this IObservable<T> source)
         {
             return
                 (onNext, onCompleted, onError) => source.Subscribe(new ActionObserver<T>(onNext, onCompleted, onError));

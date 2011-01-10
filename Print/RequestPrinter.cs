@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Text;
 using OwinHelpers;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>>;
 
 namespace Print
 {
@@ -27,7 +27,7 @@ namespace Print
             }
             catch (Exception ex)
             {
-                responseHandler(0, null, new ExceptionBody(ex));
+                responseHandler(0, null, new ExceptionBody(ex).ToAction());
             }
         }
 
@@ -47,7 +47,7 @@ namespace Print
                                   { "Content-Type", "text/html" },
                                   { "Content-Length", body.Length.ToString() }
                               };
-            responseHandler(200, headers, body);
+            responseHandler(200, headers, body.ToAction());
         }
 
         private static string ConstructUri(IDictionary<string,object> env)

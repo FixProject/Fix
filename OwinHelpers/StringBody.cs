@@ -5,7 +5,7 @@ using System.Text;
 
 namespace OwinHelpers
 {
-    public class StringBody : IObservable<byte[]>
+    public class StringBody : IObservable<ArraySegment<byte>>
     {
         private readonly byte[] _bytes;
 
@@ -23,11 +23,11 @@ namespace OwinHelpers
             get { return _bytes.Length; }
         }
 
-        public IDisposable Subscribe(IObserver<byte[]> observer)
+        public IDisposable Subscribe(IObserver<ArraySegment<byte>> observer)
         {
             Action action = () =>
                                 {
-                                    observer.OnNext(_bytes);
+                                    observer.OnNext(new ArraySegment<byte>(_bytes));
                                     observer.OnCompleted();
                                 };
             action.BeginInvoke(action.EndInvoke, null);

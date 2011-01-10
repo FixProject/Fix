@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<byte[]>>;
-
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>>;
+using Body = System.Action<System.Action<System.ArraySegment<byte>>, System.Action, System.Action<System.Exception>>;
 namespace TestServer
 {
     public class Server : IDisposable
@@ -70,7 +70,7 @@ namespace TestServer
             yield return new KeyValuePair<string, object>("url_scheme", request.Url.Scheme);
         }
 
-        static void Respond(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, IObservable<byte[]> body)
+        static void Respond(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Body body)
         {
             try
             {
@@ -93,17 +93,13 @@ namespace TestServer
                         context.Response.Headers[header.Key] = header.Value;
                     }
                 }
-                body.Subscribe(new BodyObserver(context));
+                var bodyObserver = new BodyObserver(context);
+                body(bodyObserver.OnNext, bodyObserver.OnCompleted, bodyObserver.OnError);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
             }
-        }
-
-        static void HandleException(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, Exception exception)
-        {
-            
         }
 
         public void Dispose()
@@ -121,7 +117,7 @@ namespace TestServer
                                                                               {200, "OK"},
                                                                           };
 
-        private class BodyObserver : IObserver<byte[]>
+        private class BodyObserver : IObserver<ArraySegment<byte>>
         {
             private readonly HttpListenerContext _context;
 
@@ -130,9 +126,9 @@ namespace TestServer
                 _context = context;
             }
 
-            public void OnNext(byte[] value)
+            public void OnNext(ArraySegment<byte> value)
             {
-                _context.Response.OutputStream.Write(value, 0, value.Length);
+                _context.Response.OutputStream.Write(value.Array, value.Offset, value.Count);
             }
 
             public void OnError(Exception error)

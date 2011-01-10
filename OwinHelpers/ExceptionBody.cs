@@ -5,7 +5,7 @@ using System.Text;
 
 namespace OwinHelpers
 {
-    public class ExceptionBody : IObservable<byte[]>
+    public class ExceptionBody : IObservable<ArraySegment<byte>>
     {
         private readonly Exception _error;
 
@@ -14,7 +14,7 @@ namespace OwinHelpers
             _error = error;
         }
 
-        public IDisposable Subscribe(IObserver<byte[]> observer)
+        public IDisposable Subscribe(IObserver<ArraySegment<byte>> observer)
         {
             Action action = () => observer.OnError(_error);
             action.BeginInvoke(action.EndInvoke, null);

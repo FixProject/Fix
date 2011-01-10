@@ -6,7 +6,7 @@ using System.Text;
 
 namespace OwinHelpers
 {
-    public class FileBody : IObservable<byte[]>
+    public class FileBody : IObservable<ArraySegment<byte>>
     {
         private readonly FileInfo _fileInfo;
 
@@ -15,7 +15,7 @@ namespace OwinHelpers
             _fileInfo = fileInfo;
         }
 
-        public IDisposable Subscribe(IObserver<byte[]> observer)
+        public IDisposable Subscribe(IObserver<ArraySegment<byte>> observer)
         {
             Action action = () => WriteBody(observer);
             action.BeginInvoke(action.EndInvoke, null);
@@ -23,7 +23,7 @@ namespace OwinHelpers
             return new NullDisposable();
         }
 
-        private void WriteBody(IObserver<byte[]> observer)
+        private void WriteBody(IObserver<ArraySegment<byte>> observer)
         {
             try
             {
@@ -31,7 +31,7 @@ namespace OwinHelpers
                 {
                     var buffer = new byte[stream.Length];
                     stream.Read(buffer, 0, buffer.Length);
-                    observer.OnNext(buffer);
+                    observer.OnNext(new ArraySegment<byte>(buffer));
                 }
                 observer.OnCompleted();
             }
