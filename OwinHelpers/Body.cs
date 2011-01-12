@@ -3,25 +3,25 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<System.ArraySegment<byte>>>;
 
 namespace OwinHelpers
 {
     public static class Body
     {
-        public static Action<Action<ArraySegment<byte>>, Action<FileInfo>, Action, Action<Exception>> FromException(Exception ex)
+        public static IObservable<ArraySegment<byte>> FromException(Exception ex)
         {
-            return new ExceptionBody(ex).ToAction();
+            return new ExceptionBody(ex);
         }
 
-        public static Action<Action<ArraySegment<byte>>, Action<FileInfo>, Action, Action<Exception>> FromString(string text)
+        public static IObservable<ArraySegment<byte>> FromString(string text)
         {
-            return new StringBody(text).ToAction();
+            return new StringBody(text);
         }
 
-        public static Action<Action<ArraySegment<byte>>, Action<FileInfo>, Action, Action<Exception>> FromFile(FileInfo fileInfo)
+        public static IObservable<ArraySegment<byte>> FromFile(FileInfo fileInfo)
         {
-            return new FileBody(fileInfo).ToAction();
+            return new FileBody(fileInfo);
         }
 
         public static void WriteString(this ResponseHandler responseHandler, Func<string> textGenerator, string contentType)

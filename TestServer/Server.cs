@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>;
-using Body = System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>;
+using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<System.ArraySegment<byte>>>, System.Delegate>;
+using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.IObservable<System.ArraySegment<byte>>>;
+using Body = System.IObservable<System.ArraySegment<byte>>;
 namespace TestServer
 {
-    public class Server : IDisposable
+    public sealed class Server : IDisposable
     {
         readonly HttpListener _listener;
 
@@ -96,7 +96,7 @@ namespace TestServer
                 if (body != null)
                 {
                     var bodyObserver = new BodyObserver(context);
-                    body(bodyObserver.OnData, bodyObserver.OnFile, bodyObserver.OnCompleted, bodyObserver.OnError);
+                    body.Subscribe(bodyObserver);
                 }
                 else
                 {
@@ -124,7 +124,7 @@ namespace TestServer
                                                                               {200, "OK"},
                                                                           };
 
-        private class BodyObserver
+        private sealed class BodyObserver : IObserver<ArraySegment<byte>>
         {
             private readonly HttpListenerContext _context;
 
@@ -133,9 +133,16 @@ namespace TestServer
                 _context = context;
             }
 
-            public void OnData(ArraySegment<byte> value)
+            public void OnNext(ArraySegment<byte> value)
             {
-                _context.Response.OutputStream.Write(value.Array, value.Offset, value.Count);
+                if (value.Array[value.Offset] == 0)
+                {
+                    OnFile(new FileInfo(Encoding.ASCII.GetString(value.Array, value.Offset + 1, value.Count - 1)));
+                }
+                else
+                {
+                    _context.Response.OutputStream.Write(value.Array, value.Offset, value.Count);
+                }
             }
 
             public void OnFile(FileInfo fileInfo)

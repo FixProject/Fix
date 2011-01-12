@@ -2,7 +2,7 @@
 
 namespace OwinHelpers
 {
-    internal class NullDisposable : IDisposable
+    internal sealed class NullDisposable : IDisposable
     {
         public void Dispose()
         {

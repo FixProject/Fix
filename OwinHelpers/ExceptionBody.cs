@@ -5,7 +5,7 @@ using System.Text;
 
 namespace OwinHelpers
 {
-    internal class ExceptionBody : IObservable<ArraySegment<byte>>
+    internal sealed class ExceptionBody : IObservable<ArraySegment<byte>>
     {
         private readonly Exception _error;
 

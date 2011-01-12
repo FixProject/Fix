@@ -12,3 +12,4 @@ deploy
 TestResults/*
 *.dbmdl
 Releases/2*
+NDependOut

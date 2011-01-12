@@ -46,7 +46,6 @@
   <ItemGroup>
     <Compile Include="EnumerableEx.cs" />
     <Compile Include="Fixer.cs" />
-    <Compile Include="InvokeAndForget.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

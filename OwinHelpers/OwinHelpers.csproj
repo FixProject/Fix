@@ -40,7 +40,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ActionObserver.cs" />
     <Compile Include="Body.cs" />
     <Compile Include="BodyExtensions.cs" />
     <Compile Include="DelegateExtensions.cs" />
@@ -49,8 +48,8 @@
     <Compile Include="EnvironmentExtensions.cs" />
     <Compile Include="ExceptionBody.cs" />
     <Compile Include="FileBody.cs" />
+    <Compile Include="FileInfoExtension.cs" />
     <Compile Include="NullDisposable.cs" />
-    <Compile Include="ObservableExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StringBody.cs" />
   </ItemGroup>

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace OwinHelpers
 {
-    internal class StringBody : IObservable<ArraySegment<byte>>
+    internal sealed class StringBody : IObservable<ArraySegment<byte>>
     {
         private readonly byte[] _bytes;
 
