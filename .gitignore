@@ -12,3 +12,5 @@ deploy
 TestResults/*
 *.dbmdl
 Releases/2*
+*ncrunch*
+Fix.sln.DotSettings.user

@@ -3,37 +3,41 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Text;
 using OwinHelpers;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
+using BodyDelegate = System.Func<System.IO.Stream,System.Threading.CancellationToken,System.Threading.Tasks.Task>;
+using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
+using App = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>;
 
 namespace Info
 {
+    using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
+
     public class InfoPrinter
     {
         [Export("Owin.Application")]
-        public void PrintInfo(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body,
-            ResponseHandler responseHandler, Delegate next)
+        public Task PrintInfo(IDictionary<string,object> env, IDictionary<string,string[]> headers, Stream body, CancellationToken cancellationToken, ResponseHandler responseHandler, Delegate next)
         {
             try
             {
-                if (env.GetScriptName().ToLower().Equals("/info", StringComparison.CurrentCultureIgnoreCase))
+                if (env.GetPath().ToLower().Equals("/info", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    HandleRequest(responseHandler);
+                    return HandleRequest(responseHandler);
                 }
                 else
                 {
-                    next.InvokeAsNextApp(env, body, responseHandler);
+                    return next.InvokeAsNextApp(env, headers, body, cancellationToken, responseHandler);
                 }
             }
             catch (Exception ex)
             {
-                responseHandler(0, null, Body.FromException(ex));
+                return responseHandler(0, null, Body.FromException(ex));
             }
         }
 
-        private static void HandleRequest(ResponseHandler responseHandler)
+        private static Task HandleRequest(ResponseHandler responseHandler)
         {
-            responseHandler.WriteHtml(() => "<html><body><h1>This server is running on <a href=\"http://github.com/markrendle/Fix\">Fix</a>.</h1></body></html>");
+            return responseHandler.WriteHtml(() => "<html><body><h1>This server is running on <a href=\"http://github.com/markrendle/Fix\">Fix</a>.</h1></body></html>");
         }
     }
 }

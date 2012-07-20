@@ -5,6 +5,8 @@ using System.Text;
 
 namespace OwinHelpers
 {
+    using System.Threading.Tasks;
+    using BodyDelegate = System.Func<System.IO.Stream,System.Threading.CancellationToken,System.Threading.Tasks.Task>;
     internal class StringBody : IObservable<ArraySegment<byte>>
     {
         private readonly byte[] _bytes;
@@ -16,6 +18,11 @@ namespace OwinHelpers
         public StringBody(string text, Encoding encoding)
         {
             _bytes = encoding.GetBytes(text);
+        }
+
+        public BodyDelegate ToAction()
+        {
+            return (stream, token) => Task.Factory.FromAsync(stream.BeginWrite, stream.EndWrite, _bytes, 0, _bytes.Length, null);
         }
 
         public int Length

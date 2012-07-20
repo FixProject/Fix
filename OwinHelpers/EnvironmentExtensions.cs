@@ -8,14 +8,14 @@ namespace OwinHelpers
 {
     public static class EnvironmentExtensions
     {
-        public static string GetScriptName(this Environment env)
+        public static string GetPath(this Environment env)
         {
-            return GetValue(env, "SCRIPT_NAME");
+            return GetValue(env, "owin.RequestPath");
         }
 
         public static string GetRequestMethod(this Environment env)
         {
-            return GetValue(env, "REQUEST_METHOD");
+            return GetValue(env, "owin.RequestMethod");
         }
 
         private static string GetValue(Environment env, string key)

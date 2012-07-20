@@ -4,12 +4,17 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using OwinHelpers;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>;
-using Starter = System.Action<System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>, System.Delegate>>;
+using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
+using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
+using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
+using App = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>;
+using Starter = System.Action<System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>>;
 
 namespace Fix
 {
+    using System.IO;
+    using System.Threading.Tasks;
+
     public class Fixer
     {
         private readonly Starter _starter;
@@ -31,7 +36,7 @@ namespace Fix
 
             _starter = starter;
             _stopper = stopper;
-            _app = (env, body, responseHandler, next) => DefaultInfix(env, body, responseHandler, () => EmptyHandler);
+            _app = (env, headers, body, cancel, responseHandler, next) => DefaultInfix(env, headers, body, cancel, responseHandler, () => EmptyHandler);
         }
 
         public void Start()
@@ -83,28 +88,28 @@ namespace Fix
             App newApp;
             do
             {
-                currentApp = _app;
+                var closureApp = currentApp = _app;
                 newApp =
-                    (env, body, responseHandler, next) => appToAdd(env, body, responseHandler, currentApp);
+                    (env, headers, body, cancel, responseHandler, next) => appToAdd(env, headers, body, cancel, responseHandler, closureApp);
 
             } while (!ReferenceEquals(currentApp, Interlocked.CompareExchange(ref _app, newApp, currentApp)));
             
         }
 
-        private static void EmptyHandler(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Delegate next)
+        private static Task EmptyHandler(OwinEnvironment env, IDictionary<string,string[]> headers, Stream inputStream, CancellationToken cancellationToken, ResponseHandler responseHandler, Delegate next)
         {
-            responseHandler(500, null, null);
+            return responseHandler(500, null, null);
         }
 
-        private static void DefaultInfix(IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Func<App> requestHandler)
+        private static Task DefaultInfix(OwinEnvironment env, IDictionary<string,string[]> headers, Stream inputStream, CancellationToken cancellationToken, ResponseHandler responseHandler, Func<App> requestHandler)
         {
             try
             {
-                requestHandler()(env, body, responseHandler, null);
+                return requestHandler()(env, headers, inputStream, cancellationToken, responseHandler, null);
             }
             catch (Exception ex)
             {
-                responseHandler(0, null, Body.FromException(ex));
+                return responseHandler(0, null, Body.FromException(ex));
             }
         }
     }

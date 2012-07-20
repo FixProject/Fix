@@ -1,14 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
-using App = System.Action<System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string,object>>, System.Func<byte[]>, System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>, System.Delegate>;
-using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>>, System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>>;
-using Body = System.Action<System.Action<System.ArraySegment<byte>>, System.Action<System.IO.FileInfo>, System.Action, System.Action<System.Exception>>;
+using System.Threading.Tasks;
+
 namespace TestServer
 {
+    using System.Threading;
+    using OwinEnvironment = IDictionary<string, object>;
+    using OwinHeaders = IDictionary<string, string[]>;
+    using ResponseHandler = Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>;
+    using App = Func<IDictionary<string, object>, IDictionary<string, string[]>, Stream, System.Threading.CancellationToken, Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>, Delegate, Task>;
+    using Starter = Action<Func<IDictionary<string, object>, IDictionary<string, string[]>, Stream, System.Threading.CancellationToken, Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>, Delegate, Task>>;
+    using System.Linq;
+
     public class Server : IDisposable
     {
         readonly HttpListener _listener;
@@ -44,10 +49,15 @@ namespace TestServer
                 var context = _listener.EndGetContext(result);
                 var app = (App) result.AsyncState;
                 var env = CreateEnvironmentHash(context.Request);
-                app.BeginInvoke(env,
-                    () => context.Request.InputStream.ToBytes(),
-                    (statusCode, headers, body) => Respond(context, env, statusCode, headers, body),
-                    null, app.EndInvoke, null);
+                var headers = CreateRequestHeaders(context.Request);
+                app(env, headers, context.Request.InputStream, CancellationToken.None,
+                    (status, outputHeaders, bodyDelegate) =>
+                        {
+                            context.Response.StatusCode = status > 0 ? status : 404;
+                            WriteHeaders(outputHeaders, context);
+                            return bodyDelegate(context.Response.OutputStream, CancellationToken.None);
+                        }, null)
+                        .ContinueWith(t => context.Response.Close());
 
                 _listener.BeginGetContext(GotContext, app);
             }
@@ -57,57 +67,98 @@ namespace TestServer
             }
         }
 
-        private static IEnumerable<KeyValuePair<string,object>> CreateEnvironmentHash(HttpListenerRequest request)
+        private static void WriteHeaders(OwinHeaders outputHeaders, HttpListenerContext context)
         {
-            yield return new KeyValuePair<string, object>("REQUEST_METHOD", request.HttpMethod);
-            yield return new KeyValuePair<string, object>("SCRIPT_NAME", request.Url.AbsolutePath);
-            yield return new KeyValuePair<string, object>("PATH_INFO", string.Empty);
-            yield return new KeyValuePair<string, object>("QUERY_STRING", request.Url.Query);
-            yield return new KeyValuePair<string, object>("SERVER_NAME", request.Url.Host);
-            yield return new KeyValuePair<string, object>("SERVER_PORT", request.Url.Port.ToString());
-            yield return
-                new KeyValuePair<string, object>("SERVER_PROTOCOL", "HTTP/" + request.ProtocolVersion.ToString(2));
-            yield return new KeyValuePair<string, object>("url_scheme", request.Url.Scheme);
-        }
-
-        static void Respond(HttpListenerContext context, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Body body)
-        {
-            try
+            if (outputHeaders != null)
             {
-                context.Response.StatusCode = status;
-                context.Response.StatusDescription = GetStatusText(status);
-                if (headers != null)
+                context.Response.Headers.Clear();
+                foreach (var outputHeader in outputHeaders)
                 {
-                    foreach (var header in headers)
+                    if (SpecialCase(outputHeader.Key, outputHeader.Value, context.Response)) continue;
+                    foreach (var value in outputHeader.Value)
                     {
-                        if (header.Key.Equals("content-length", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            context.Response.ContentLength64 = long.Parse(header.Value);
-                            continue;
-                        }
-                        if (header.Key.Equals("content-type", StringComparison.CurrentCultureIgnoreCase))
-                        {
-                            context.Response.ContentType = header.Value;
-                            continue;
-                        }
-                        context.Response.Headers[header.Key] = header.Value;
+                        context.Response.Headers.Add(outputHeader.Key, value);
                     }
                 }
-                if (body != null)
-                {
-                    var bodyObserver = new BodyObserver(context);
-                    body(bodyObserver.OnData, bodyObserver.OnFile, bodyObserver.OnCompleted, bodyObserver.OnError);
-                }
-                else
-                {
-                    context.Response.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
             }
         }
+
+        private static bool SpecialCase(string key, string[] value, HttpListenerResponse response)
+        {
+            if (key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+            {
+                response.ContentLength64 = long.Parse(value[0]);
+                return true;
+            }
+            if (key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
+            {
+                response.ContentType = value[0];
+                return true;
+            }
+            return false;
+        }
+
+        private static IDictionary<string, object> CreateEnvironmentHash(HttpListenerRequest request)
+        {
+            return new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                {
+
+                    {"owin.RequestMethod", request.HttpMethod},
+                    {"owin.RequestPath", request.Url.AbsolutePath},
+                    {"owin.RequestPathBase", string.Empty},
+                    {"owin.RequestQueryString", request.Url.Query},
+                    {"host.ServerName", request.Url.Host},
+                    {"host.ServerPort", request.Url.Port.ToString()},
+                    {"owin.RequestProtocol", "HTTP/" + request.ProtocolVersion.ToString(2)},
+                    {"owin.RequestScheme", request.Url.Scheme},
+                    {"owin.Version", "1.0"},
+                };
+        }
+
+        private static IDictionary<string,string[]> CreateRequestHeaders(HttpListenerRequest request)
+        {
+            return request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.GetValues(k),
+                                                        StringComparer.OrdinalIgnoreCase);
+        }
+
+        //static void Respond(HttpListenerContext response, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Body body)
+        //{
+        //    try
+        //    {
+        //        response.Response.StatusCode = status;
+        //        response.Response.StatusDescription = GetStatusText(status);
+        //        if (headers != null)
+        //        {
+        //            foreach (var header in headers)
+        //            {
+        //                if (header.Key.Equals("content-length", StringComparison.CurrentCultureIgnoreCase))
+        //                {
+        //                    response.Response.ContentLength64 = long.Parse(header.Value);
+        //                    continue;
+        //                }
+        //                if (header.Key.Equals("content-type", StringComparison.CurrentCultureIgnoreCase))
+        //                {
+        //                    response.Response.ContentType = header.Value;
+        //                    continue;
+        //                }
+        //                response.Response.Headers[header.Key] = header.Value;
+        //            }
+        //        }
+        //        if (body != null)
+        //        {
+        //            var bodyObserver = new BodyObserver(response);
+        //            body(bodyObserver.OnData, bodyObserver.OnFile, bodyObserver.OnCompleted, bodyObserver.OnError);
+        //        }
+        //        else
+        //        {
+        //            response.Response.Close();
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine(ex.ToString());
+        //    }
+        //}
 
         public void Dispose()
         {
