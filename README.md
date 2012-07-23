@@ -1,5 +1,8 @@
 # Fix
 An ultra-lightweight web glue for .NET, written in C#.
+## README needs updating
+This README is out of date. I've just picked Fix up again to use with Simple.Web, so the information below is wrong. I'll update it soon.
+MR 21-Jul-2012
 ## What?
 Fix joins together web servers, request handlers and "infixes", or middleware, in such a way that the implementations of each don't need to know anything about each other, or, indeed, about Fix itself.
 ### Example?
