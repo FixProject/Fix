@@ -20,6 +20,7 @@ namespace Fix
         private readonly Starter _starter;
         private readonly Action _stopper;
         private int _startCallCount;
+        private int _buildCallCount;
         private int _handlerCount;
         private App _app;
 
@@ -29,14 +30,26 @@ namespace Fix
         [ImportMany("Owin.Middleware")]
         private IEnumerable<App> _infixes;
 
-        public Fixer(Starter starter, Action stopper)
+        public Fixer()
+        {
+            _app = (env, headers, body, cancel, responseHandler, next) => DefaultInfix(env, headers, body, cancel, responseHandler, () => EmptyHandler);
+        }
+
+        public Fixer(Starter starter, Action stopper) : this()
         {
             if (starter == null) throw new ArgumentNullException("starter");
             if (stopper == null) throw new ArgumentNullException("stopper");
 
             _starter = starter;
             _stopper = stopper;
-            _app = (env, headers, body, cancel, responseHandler, next) => DefaultInfix(env, headers, body, cancel, responseHandler, () => EmptyHandler);
+        }
+
+        public App BuildApp()
+        {
+            AddHandlers();
+            AddInfixes();
+            if (_handlerCount == 0) throw new InvalidOperationException("No handlers attached.");
+            return _app;
         }
 
         public void Start()

@@ -121,45 +121,6 @@ namespace TestServer
                                                         StringComparer.OrdinalIgnoreCase);
         }
 
-        //static void Respond(HttpListenerContext response, IEnumerable<KeyValuePair<string,object>> env, int status, IEnumerable<KeyValuePair<string, string>> headers, Body body)
-        //{
-        //    try
-        //    {
-        //        response.Response.StatusCode = status;
-        //        response.Response.StatusDescription = GetStatusText(status);
-        //        if (headers != null)
-        //        {
-        //            foreach (var header in headers)
-        //            {
-        //                if (header.Key.Equals("content-length", StringComparison.CurrentCultureIgnoreCase))
-        //                {
-        //                    response.Response.ContentLength64 = long.Parse(header.Value);
-        //                    continue;
-        //                }
-        //                if (header.Key.Equals("content-type", StringComparison.CurrentCultureIgnoreCase))
-        //                {
-        //                    response.Response.ContentType = header.Value;
-        //                    continue;
-        //                }
-        //                response.Response.Headers[header.Key] = header.Value;
-        //            }
-        //        }
-        //        if (body != null)
-        //        {
-        //            var bodyObserver = new BodyObserver(response);
-        //            body(bodyObserver.OnData, bodyObserver.OnFile, bodyObserver.OnCompleted, bodyObserver.OnError);
-        //        }
-        //        else
-        //        {
-        //            response.Response.Close();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine(ex.ToString());
-        //    }
-        //}
-
         public void Dispose()
         {
             ((IDisposable)_listener).Dispose();
@@ -174,38 +135,5 @@ namespace TestServer
                                                                           {
                                                                               {200, "OK"},
                                                                           };
-
-        private class BodyObserver
-        {
-            private readonly HttpListenerContext _context;
-
-            public BodyObserver(HttpListenerContext context)
-            {
-                _context = context;
-            }
-
-            public void OnData(ArraySegment<byte> value)
-            {
-                _context.Response.OutputStream.Write(value.Array, value.Offset, value.Count);
-            }
-
-            public void OnFile(FileInfo fileInfo)
-            {
-                using (var stream = fileInfo.OpenRead())
-                {
-                    stream.CopyTo(_context.Response.OutputStream);
-                }
-            }
-
-            public void OnError(Exception error)
-            {
-                _context.Response.Close();
-            }
-
-            public void OnCompleted()
-            {
-                _context.Response.Close();
-            }
-        }
     }
 }
