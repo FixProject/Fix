@@ -35,6 +35,7 @@ namespace OwinHelpers
                 var body = FromString(text);
 
                 var headers = BuildBasicHeaders(text.Length, contentType);
+                headers["Set-Cookie"] = new[] {"foo=bar"};
                 return responseHandler(200, headers, body);
             }
             catch (Exception ex)

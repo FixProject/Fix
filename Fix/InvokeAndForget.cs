@@ -5,11 +5,11 @@ using ResponseHandler = System.Action<int, System.Collections.Generic.IEnumerabl
 
 namespace Fix
 {
-    static class InvokeAndForgetEx
-    {
-        public static void InvokeAndForget(this RequestHandler handler, IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
-        {
-            handler.BeginInvoke(env, body, responseHandler, exceptionHandler, next, handler.EndInvoke, null);
-        }
-    }
+    //static class InvokeAndForgetEx
+    //{
+    //    public static void InvokeAndForget(this RequestHandler handler, IEnumerable<KeyValuePair<string,object>> env, Func<byte[]> body, ResponseHandler responseHandler, Action<Exception> exceptionHandler, Delegate next)
+    //    {
+    //        handler.BeginInvoke(env, body, responseHandler, exceptionHandler, next, handler.EndInvoke, null);
+    //    }
+    //}
 }

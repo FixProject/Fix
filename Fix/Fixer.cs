@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
-using OwinHelpers;
 using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
 using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
 using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;

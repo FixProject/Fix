@@ -1,4 +1,4 @@
-﻿namespace FixAsp
+﻿namespace Fix.AspNet
 {
     using System;
     using System.Collections.Generic;
@@ -16,7 +16,7 @@
     using Starter = System.Action<System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>>;
     using System.Linq;
 
-    public class Bridge
+    internal class Bridge
     {
         private static readonly object SyncApp = new object();
         private static volatile App _app;
@@ -25,30 +25,39 @@
         {
             if (_app == null)
             {
-                lock (SyncApp)
-                {
-                    if (_app == null)
-                    {
-                        var fixer = new Fixer();
-                        string path = Path.Combine(context.Request.PhysicalApplicationPath, "bin");
-                        using (var catalog = new DirectoryCatalog(path))
-                        {
-                            var container = new CompositionContainer(catalog);
-                            container.ComposeParts(fixer);
-                        }
-                        _app = fixer.BuildApp();
-                    }
-                }
+                Initialize(context);
             }
-            var env = CreateEnvironmentHash(context.Request);
+            var env = CreateEnvironmentHash(context);
             var headers = CreateRequestHeaders(context.Request);
             return _app(env, headers, context.Request.InputStream, CancellationToken.None,
                 (status, outputHeaders, bodyDelegate) =>
                 {
                     context.Response.StatusCode = status > 0 ? status : 404;
                     WriteHeaders(outputHeaders, context);
-                    return bodyDelegate(context.Response.OutputStream, CancellationToken.None);
+                    if (bodyDelegate != null)
+                    {
+                        return bodyDelegate(context.Response.OutputStream, CancellationToken.None);
+                    }
+                    return TaskHelper.Completed();
                 }, null);
+        }
+
+        private static void Initialize(HttpContext context)
+        {
+            lock (SyncApp)
+            {
+                if (_app == null)
+                {
+                    var fixer = new Fixer();
+                    string path = Path.Combine(context.Request.PhysicalApplicationPath, "bin");
+                    using (var catalog = new DirectoryCatalog(path))
+                    {
+                        var container = new CompositionContainer(catalog);
+                        container.ComposeParts(fixer);
+                    }
+                    _app = fixer.BuildApp();
+                }
+            }
         }
 
         private static void WriteHeaders(OwinHeaders outputHeaders, HttpContext context)
@@ -82,20 +91,22 @@
             return false;
         }
 
-        private static OwinEnvironment CreateEnvironmentHash(HttpRequest request)
+        private static OwinEnvironment CreateEnvironmentHash(HttpContext context)
         {
+            var request = context.Request;
             return new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
                 {
 
                     {"owin.RequestMethod", request.HttpMethod},
                     {"owin.RequestPath", request.Url.AbsolutePath},
                     {"owin.RequestPathBase", string.Empty},
-                    {"owin.RequestQueryString", request.Url.Query},
+                    {"owin.RequestQueryString", request.Url.Query.TrimStart('?')},
                     {"host.ServerName", request.Url.Host},
-                    {"host.ServerPort", request.Url.Port.ToString()},
-                    {"owin.RequestProtocol", request.ServerVariables["HTTP_VERSION"][0]},
+                    {"host.ServerPort", request.Url.Port},
+                    {"owin.RequestProtocol", request.ServerVariables["HTTP_VERSION"]},
                     {"owin.RequestScheme", request.Url.Scheme},
                     {"owin.Version", "1.0"},
+                    {"aspnet.Context", context},
                 };
         }
 

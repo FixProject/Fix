@@ -14,3 +14,4 @@ TestResults/*
 Releases/2*
 *ncrunch*
 Fix.sln.DotSettings.user
+*.nupkg

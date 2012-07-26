@@ -61,9 +61,6 @@
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bridge.cs" />
-    <Compile Include="FixHttpHandler.cs" />
-    <Compile Include="FixUp.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -77,6 +74,10 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Fix.AspNet\Fix.AspNet.csproj">
+      <Project>{ccac0a87-18f1-4db9-bf12-9185a81917cd}</Project>
+      <Name>Fix.AspNet</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Fix\Fix.csproj">
       <Project>{AE24B4A3-30AE-4479-BB37-A37BB65BFBC0}</Project>
       <Name>Fix</Name>
