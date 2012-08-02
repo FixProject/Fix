@@ -6,8 +6,35 @@ using System.Threading;
 using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
 using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
 using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
-using App = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>;
-using Starter = System.Action<System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>>;
+using Starter = System.Action<System.Func< // Call
+        System.Collections.Generic.IDictionary<string, object>, // Environment
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.IO.Stream, // Body
+        System.Threading.Tasks.Task<System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>>>>;
+using AppFunc = System.Func< // Call
+        System.Collections.Generic.IDictionary<string, object>, // Environment
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.IO.Stream, // Body
+        System.Threading.Tasks.Task<System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>>>; // Done
+using Result = System.Tuple< //Result
+        System.Collections.Generic.IDictionary<string, object>, // Properties
+        int, // Status
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.Func< // Body
+            System.IO.Stream, // Output
+            System.Threading.Tasks.Task>>; // Done
 
 namespace Fix
 {
@@ -21,17 +48,17 @@ namespace Fix
         private int _startCallCount;
         private int _buildCallCount;
         private int _handlerCount;
-        private App _app;
+        private AppFunc _app;
 
         [ImportMany("Owin.Application")]
-        private IEnumerable<App> _handlers;
+        private IEnumerable<AppFunc> _handlers;
 
         [ImportMany("Owin.Middleware")]
-        private IEnumerable<App> _infixes;
+        private IEnumerable<Func<AppFunc, AppFunc>> _infixes;
 
         public Fixer()
         {
-            _app = (env, headers, body, cancel, responseHandler, next) => DefaultInfix(env, headers, body, cancel, responseHandler, () => EmptyHandler);
+            _app = EmptyHandler;
         }
 
         public Fixer(Starter starter, Action stopper) : this()
@@ -43,20 +70,26 @@ namespace Fix
             _stopper = stopper;
         }
 
-        public App BuildApp()
+        public AppFunc BuildApp()
         {
-            AddHandlers();
+            var handlers = _handlers.ToArray();
+            if (handlers.Length == 0) throw new InvalidOperationException("No application found.");
+            if (handlers.Length > 1)
+            {
+                _app = new MultiApp(handlers).Handle;
+            }
+            else
+            {
+                _app = handlers[0];
+            }
             AddInfixes();
-            if (_handlerCount == 0) throw new InvalidOperationException("No handlers attached.");
             return _app;
         }
 
         public void Start()
         {
             if (Interlocked.Increment(ref _startCallCount) > 1) throw new InvalidOperationException("Fixer has been used.");
-            AddHandlers();
-            AddInfixes();
-            if (_handlerCount == 0) throw new InvalidOperationException("No handlers attached.");
+            BuildApp();
             _starter(_app);
         }
 
@@ -65,64 +98,49 @@ namespace Fix
             _stopper();
         }
 
-        private void AddHandlers()
-        {
-            if (_handlers == null) return;
-            foreach (var handler in _handlers)
-            {
-                AddApp(handler);
-                _handlerCount++;
-            }
-        }
-
-        public void AddHandler(App handlerToAdd)
-        {
-            _handlers = (_handlers ?? Enumerable.Empty<App>()).Append(handlerToAdd);
-        }
-
-        public void AddInfix(App infixToAdd)
-        {
-            _infixes = (_infixes ?? Enumerable.Empty<App>()).Append(infixToAdd);
-        }
-
         private void AddInfixes()
         {
             if (_infixes == null) return;
             foreach (var infix in _infixes)
             {
-                AddApp(infix);
+                _app = infix(_app);
             }
         }
 
-        private void AddApp(App appToAdd)
+        private static Task<Result> EmptyHandler(OwinEnvironment env, IDictionary<string,string[]> headers, Stream inputStream)
         {
-            App currentApp;
-            App newApp;
-            do
-            {
-                var closureApp = currentApp = _app;
-                newApp =
-                    (env, headers, body, cancel, responseHandler, next) => appToAdd(env, headers, body, cancel, responseHandler, closureApp);
+            return TaskHelper.Completed(new Result(null, 404, null, null));
+        }
+    }
 
-            } while (!ReferenceEquals(currentApp, Interlocked.CompareExchange(ref _app, newApp, currentApp)));
-            
+    class MultiApp
+    {
+        private readonly AppFunc[] _appFuncs;
+
+        public MultiApp(AppFunc[] appFuncs)
+        {
+            _appFuncs = appFuncs;
         }
 
-        private static Task EmptyHandler(OwinEnvironment env, IDictionary<string,string[]> headers, Stream inputStream, CancellationToken cancellationToken, ResponseHandler responseHandler, Delegate next)
+        public Task<Result> Handle(IDictionary<string,object> env, IDictionary<string,string[]> headers, Stream body)
         {
-            return responseHandler(500, null, null);
-        }
+            var task = _appFuncs[0](env, headers, body);
 
-        private static Task DefaultInfix(OwinEnvironment env, IDictionary<string,string[]> headers, Stream inputStream, CancellationToken cancellationToken, ResponseHandler responseHandler, Func<App> requestHandler)
-        {
-            try
+            for (int i = 1; i < _appFuncs.Length; i++)
             {
-                return requestHandler()(env, headers, inputStream, cancellationToken, responseHandler, null);
+                int index = i;
+                task = task.ContinueWith(t =>
+                    {
+                        if (t.IsFaulted) return t;
+                        if (t.IsCanceled || t.Result.Item2 == 404)
+                        {
+                            return _appFuncs[index](env, headers, body);
+                        }
+                        return t;
+                    }, TaskContinuationOptions.None).Unwrap();
             }
-            catch (Exception ex)
-            {
-                return responseHandler(0, null, Body.FromException(ex));
-            }
+
+            return task;
         }
     }
 }

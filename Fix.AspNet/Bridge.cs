@@ -12,14 +12,31 @@
     using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
     using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
     using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
-    using App = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>;
     using Starter = System.Action<System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>>;
+    using AppFunc = System.Func< // Call
+        System.Collections.Generic.IDictionary<string, object>, // Environment
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.IO.Stream, // Body
+        System.Threading.Tasks.Task<System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>>>; // Done
+    using Result = System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>; // Done
     using System.Linq;
 
     internal class Bridge
     {
         private static readonly object SyncApp = new object();
-        private static volatile App _app;
+        private static volatile AppFunc _app;
 
         public static Task RunContext(HttpContext context)
         {
@@ -29,17 +46,18 @@
             }
             var env = CreateEnvironmentHash(context);
             var headers = CreateRequestHeaders(context.Request);
-            return _app(env, headers, context.Request.InputStream, CancellationToken.None,
-                (status, outputHeaders, bodyDelegate) =>
+            var task = _app(env, headers, context.Request.InputStream);
+            return task
+                .ContinueWith(t =>
                 {
-                    context.Response.StatusCode = status > 0 ? status : 404;
-                    WriteHeaders(outputHeaders, context);
-                    if (bodyDelegate != null)
+                    context.Response.StatusCode = t.Result.Item2 > 0 ? t.Result.Item2 : 404;
+                    WriteHeaders(t.Result.Item3, context);
+                    if (t.Result.Item4 != null)
                     {
-                        return bodyDelegate(context.Response.OutputStream, CancellationToken.None);
+                        return t.Result.Item4(context.Response.OutputStream);
                     }
                     return TaskHelper.Completed();
-                }, null);
+                }, TaskContinuationOptions.None);
         }
 
         private static void Initialize(HttpContext context)

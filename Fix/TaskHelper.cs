@@ -15,5 +15,12 @@ namespace Fix
             tcs.SetResult(null);
             return tcs.Task;
         }
+        
+        public static Task<T> Completed<T>(T result)
+        {
+            var tcs = new TaskCompletionSource<T>();
+            tcs.SetResult(result);
+            return tcs.Task;
+        }
     }
 }

@@ -10,8 +10,25 @@ namespace TestServer
     using OwinEnvironment = IDictionary<string, object>;
     using OwinHeaders = IDictionary<string, string[]>;
     using ResponseHandler = Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>;
-    using App = Func<IDictionary<string, object>, IDictionary<string, string[]>, Stream, System.Threading.CancellationToken, Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>, Delegate, Task>;
     using Starter = Action<Func<IDictionary<string, object>, IDictionary<string, string[]>, Stream, System.Threading.CancellationToken, Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>, Delegate, Task>>;
+    using AppFunc = System.Func< // Call
+        System.Collections.Generic.IDictionary<string, object>, // Environment
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.IO.Stream, // Body
+        System.Threading.Tasks.Task<System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>>>; // Done
+    using Result = System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>; // Done
     using System.Linq;
 
     public class Server : IDisposable
@@ -24,7 +41,7 @@ namespace TestServer
             _listener.Prefixes.Add(prefix);
         }
 
-        public void Start(App app)
+        public void Start(AppFunc app)
         {
             _listener.Start();
             _listener.BeginGetContext(GotContext, app);
@@ -47,16 +64,20 @@ namespace TestServer
             try
             {
                 var context = _listener.EndGetContext(result);
-                var app = (App) result.AsyncState;
+                var app = (AppFunc) result.AsyncState;
                 var env = CreateEnvironmentHash(context.Request);
                 var headers = CreateRequestHeaders(context.Request);
-                app(env, headers, context.Request.InputStream, CancellationToken.None,
-                    (status, outputHeaders, bodyDelegate) =>
+                app(env, headers, context.Request.InputStream)
+                    .ContinueWith(t =>
                         {
-                            context.Response.StatusCode = status > 0 ? status : 404;
-                            WriteHeaders(outputHeaders, context);
-                            return bodyDelegate(context.Response.OutputStream, CancellationToken.None);
-                        }, null)
+                            context.Response.StatusCode = t.Result.Item2 > 0 ? t.Result.Item2 : 404;
+                            WriteHeaders(t.Result.Item3, context);
+                            if (t.Result.Item4 != null)
+                            {
+                                return t.Result.Item4(context.Response.OutputStream);
+                            }
+                            return Complete();
+                        }, TaskContinuationOptions.None)
                         .ContinueWith(t => context.Response.Close());
 
                 _listener.BeginGetContext(GotContext, app);
@@ -65,6 +86,13 @@ namespace TestServer
             {
                 Console.WriteLine(ex.ToString());
             }
+        }
+
+        private static Task Complete()
+        {
+            var tcs = new TaskCompletionSource<object>();
+            tcs.SetResult(null);
+            return tcs.Task;
         }
 
         private static void WriteHeaders(OwinHeaders outputHeaders, HttpListenerContext context)

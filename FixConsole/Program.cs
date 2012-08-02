@@ -11,7 +11,7 @@ namespace FixUp
     {
         static void Main(string[] args)
         {
-            var prefix = args.Length == 1 ? args[0] : "http://*:81/";
+            var prefix = args.Length == 1 ? args[0] : "http://*:3333/";
             using (var server = new Server(prefix))
             {
                 var fixer = new Fixer(server.Start, server.Stop);

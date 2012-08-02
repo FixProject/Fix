@@ -3,9 +3,24 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Text;
 using OwinHelpers;
-using BodyDelegate = System.Func<System.IO.Stream,System.Threading.CancellationToken,System.Threading.Tasks.Task>;
-using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
-using App = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>;
+using AppFunc = System.Func< // Call
+        System.Collections.Generic.IDictionary<string, object>, // Environment
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.IO.Stream, // Body
+        System.Threading.Tasks.Task<System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>>>; // Done
+using Result = System.Tuple< //Result
+        System.Collections.Generic.IDictionary<string, object>, // Properties
+        int, // Status
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.Func< // Body
+            System.IO.Stream, // Output
+            System.Threading.Tasks.Task>>; // Done
 
 namespace Info
 {
@@ -16,28 +31,36 @@ namespace Info
     public class InfoPrinter
     {
         [Export("Owin.Application")]
-        public Task PrintInfo(IDictionary<string,object> env, IDictionary<string,string[]> headers, Stream body, CancellationToken cancellationToken, ResponseHandler responseHandler, Delegate next)
+        public Task<Result> PrintInfo(IDictionary<string,object> env, IDictionary<string,string[]> headers, Stream body)
         {
             try
             {
                 if (env.GetPath().ToLower().Equals("/info", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    return HandleRequest(responseHandler);
+                    return HandleRequest();
                 }
-                else
-                {
-                    return next.InvokeAsNextApp(env, headers, body, cancellationToken, responseHandler);
-                }
+
+                return TaskHelper.NotFound();
             }
             catch (Exception ex)
             {
-                return responseHandler(0, null, Body.FromException(ex));
+                return TaskHelper.Error(ex);
             }
         }
 
-        private static Task HandleRequest(ResponseHandler responseHandler)
+        private static Task<Result> HandleRequest()
         {
-            return responseHandler.WriteHtml(() => "<html><body><h1>This server is running on <a href=\"http://github.com/markrendle/Fix\">Fix</a>.</h1></body></html>");
+            return TaskHelper.Completed(null, 200,
+                                        new Dictionary<string, string[]> {{"Content-Type", new[] {"text/html"}}},
+                                        WriteHtml);
+        }
+
+        private static Task WriteHtml(Stream s)
+        {
+            var bytes =
+                Encoding.UTF8.GetBytes(
+                    "<html><body><h1>This server is running on <a href=\"http://github.com/markrendle/Fix\">Fix</a>.</h1></body></html>");
+            return s.WriteAsync(bytes, 0, bytes.Length);
         }
     }
 }

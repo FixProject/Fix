@@ -3,9 +3,24 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Text;
 using OwinHelpers;
-using BodyDelegate = System.Func<System.IO.Stream,System.Threading.CancellationToken,System.Threading.Tasks.Task>;
-using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
-using App = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>;
+using AppFunc = System.Func< // Call
+        System.Collections.Generic.IDictionary<string, object>, // Environment
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.IO.Stream, // Body
+        System.Threading.Tasks.Task<System.Tuple< //Result
+            System.Collections.Generic.IDictionary<string, object>, // Properties
+            int, // Status
+            System.Collections.Generic.IDictionary<string, string[]>, // Headers
+            System.Func< // Body
+                System.IO.Stream, // Output
+                System.Threading.Tasks.Task>>>>; // Done
+using Result = System.Tuple< //Result
+        System.Collections.Generic.IDictionary<string, object>, // Properties
+        int, // Status
+        System.Collections.Generic.IDictionary<string, string[]>, // Headers
+        System.Func< // Body
+            System.IO.Stream, // Output
+            System.Threading.Tasks.Task>>; // Done
 
 namespace Print
 {
@@ -16,29 +31,28 @@ namespace Print
     public class RequestPrinter
     {
         [Export("Owin.Application")]
-        public Task PrintRequest(IDictionary<string, object> env, IDictionary<string, string[]> headers, Stream body, CancellationToken cancellationToken, ResponseHandler responseHandler, Delegate next)
+        public Task<Result> PrintRequest(IDictionary<string, object> env, IDictionary<string, string[]> headers, Stream body)
         {
             try
             {
                 var scriptName = env.GetPath().ToLower();
                 if (!(scriptName.Contains("/info") || scriptName.Contains(".")))
                 {
-                    return HandlePrintRequest(env.ToDictionary(), responseHandler);
-                }
-                else
-                {
-                    return next.InvokeAsNextApp(env, headers, body, cancellationToken, responseHandler);
+                    return HandlePrintRequest(env);
                 }
             }
             catch (Exception ex)
             {
-                return responseHandler(0, null, Body.FromException(ex));
+                return TaskHelper.Error(ex);
             }
+            return TaskHelper.NotFound();
         }
 
-        private static Task HandlePrintRequest(IDictionary<string,object> env, ResponseHandler responseHandler)
+        private static Task<Result> HandlePrintRequest(IDictionary<string, object> env)
         {
-            return responseHandler.WriteHtml(() => BuildHtml(env));
+            return TaskHelper.Completed(null, 200,
+                                        new Dictionary<string, string[]> {{"Content-Type", new[] {"text/html"}}},
+                                        stream => stream.WriteAsync(BuildHtml(env)));
         }
 
         private static string BuildHtml(IDictionary<string, object> env)
