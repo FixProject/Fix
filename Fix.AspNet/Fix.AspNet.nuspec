@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>Fix.AspNet</id>
-    <version>0.1</version>
+    <version>0.2</version>
     <authors>Mark Rendle</authors>
     <owners>Mark Rendle</owners>
     <copyright>Mark Rendle</copyright>
@@ -12,7 +12,7 @@
     <description>A glue for OWIN.</description>
     <tags>fix owin http</tags>
     <dependencies>
-      <dependency id="Fix" version="0.1" />
+      <dependency id="Fix" version="0.2" />
     </dependencies>
   </metadata>
 </package>

@@ -5,14 +5,11 @@
     using System.ComponentModel.Composition;
     using System.ComponentModel.Composition.Hosting;
     using System.IO;
-    using System.Threading;
     using System.Threading.Tasks;
     using System.Web;
     using Fix;
     using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
     using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
-    using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
-    using Starter = System.Action<System.Func<System.Collections.Generic.IDictionary<string, object>, System.Collections.Generic.IDictionary<string, string[]>, System.IO.Stream, System.Threading.CancellationToken, System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>, System.Delegate, System.Threading.Tasks.Task>>;
     using AppFunc = System.Func< // Call
         System.Collections.Generic.IDictionary<string, object>, // Environment
         System.Collections.Generic.IDictionary<string, string[]>, // Headers
@@ -43,8 +40,14 @@
             if (_app == null)
             {
                 Initialize(context);
+                if (_app == null)
+                {
+                    throw new InvalidOperationException("No application found.");
+                }
             }
             var env = CreateEnvironmentHash(context);
+            var tcs = new TaskCompletionSource<object>();
+            env.Add(OwinKeys.CallCompleted, tcs.Task);
             var headers = CreateRequestHeaders(context.Request);
             var task = _app(env, headers, context.Request.InputStream);
             return task
@@ -57,7 +60,25 @@
                         return t.Result.Item4(context.Response.OutputStream);
                     }
                     return TaskHelper.Completed();
-                }, TaskContinuationOptions.None);
+                }, TaskContinuationOptions.None)
+                .Unwrap()
+                .ContinueWith(t => SetOwinCallCompleted(t, tcs));
+        }
+
+        private static void SetOwinCallCompleted(Task t, TaskCompletionSource<object> tcs)
+        {
+            if (t.IsFaulted)
+            {
+                tcs.TrySetException(t.Exception ?? new Exception("An unknown error occurred."));
+            }
+            else if (t.IsCanceled)
+            {
+                tcs.TrySetCanceled();
+            }
+            else
+            {
+                tcs.SetResult(null);
+            }
         }
 
         private static void Initialize(HttpContext context)
@@ -67,7 +88,7 @@
                 if (_app == null)
                 {
                     var fixer = new Fixer();
-                    string path = Path.Combine(context.Request.PhysicalApplicationPath, "bin");
+                    string path = Path.Combine(context.Request.PhysicalApplicationPath ?? Environment.CurrentDirectory, "bin");
                     using (var catalog = new DirectoryCatalog(path))
                     {
                         var container = new CompositionContainer(catalog);
@@ -78,11 +99,10 @@
             }
         }
 
-        private static void WriteHeaders(OwinHeaders outputHeaders, HttpContext context)
+        private static void WriteHeaders(IEnumerable<KeyValuePair<string, string[]>> outputHeaders, HttpContext context)
         {
             if (outputHeaders != null)
             {
-                //context.Response.Headers.Clear();
                 foreach (var outputHeader in outputHeaders)
                 {
                     if (SpecialCase(outputHeader.Key, outputHeader.Value, context.Response)) continue;
@@ -96,11 +116,6 @@
 
         private static bool SpecialCase(string key, string[] value, HttpResponse response)
         {
-            //if (key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
-            //{
-            //    response.Con = long.Parse(value[0]);
-            //    return true;
-            //}
             if (key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase))
             {
                 response.ContentType = value[0];
@@ -114,16 +129,17 @@
             var request = context.Request;
             return new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
                 {
-
-                    {"owin.RequestMethod", request.HttpMethod},
-                    {"owin.RequestPath", request.Url.AbsolutePath},
-                    {"owin.RequestPathBase", string.Empty},
-                    {"owin.RequestQueryString", request.Url.Query.TrimStart('?')},
-                    {"host.ServerName", request.Url.Host},
-                    {"host.ServerPort", request.Url.Port},
-                    {"owin.RequestProtocol", request.ServerVariables["HTTP_VERSION"]},
-                    {"owin.RequestScheme", request.Url.Scheme},
-                    {"owin.Version", "1.0"},
+                    {OwinKeys.RequestMethod, request.HttpMethod},
+                    {OwinKeys.RequestPath, request.Url.AbsolutePath},
+                    {OwinKeys.RequestPathBase, string.Empty},
+                    {OwinKeys.RequestQueryString, request.Url.Query.TrimStart('?')},
+                    {ServerKeys.LocalIpAddress, request.ServerVariables["LOCAL_ADDR"]},
+                    {ServerKeys.RemoteIpAddress, request.ServerVariables["REMOTE_ADDR"]},
+                    {ServerKeys.RemotePort, request.ServerVariables["REMOTE_PORT"]},
+                    {ServerKeys.LocalPort, request.ServerVariables["SERVER_PORT"]},
+                    {OwinKeys.RequestProtocol, request.ServerVariables["HTTP_VERSION"]},
+                    {OwinKeys.RequestScheme, request.Url.Scheme},
+                    {OwinKeys.Version, "1.0"},
                     {"aspnet.Context", context},
                 };
         }
