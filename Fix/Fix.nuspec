@@ -12,4 +12,7 @@
     <description>A glue for OWIN.</description>
     <tags>fix owin http</tags>
   </metadata>
+  <files>
+    <file src="bin\Release\Fix.dll" target="lib\net40" />
+  </files>
 </package>
