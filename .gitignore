@@ -16,3 +16,4 @@ Releases/2*
 Fix.sln.DotSettings.user
 *.nupkg
 nohup.out
+build
