@@ -5,36 +5,12 @@ using System.Linq;
 using System.Threading;
 using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
 using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
-using ResponseHandler = System.Func<int, System.Collections.Generic.IDictionary<string, string[]>, System.Func<System.IO.Stream, System.Threading.CancellationToken, System.Threading.Tasks.Task>, System.Threading.Tasks.Task>;
 using Starter = System.Action<System.Func< // Call
         System.Collections.Generic.IDictionary<string, object>, // Environment
-        System.Collections.Generic.IDictionary<string, string[]>, // Headers
-        System.IO.Stream, // Body
-        System.Threading.Tasks.Task<System.Tuple< //Result
-            System.Collections.Generic.IDictionary<string, object>, // Properties
-            int, // Status
-            System.Collections.Generic.IDictionary<string, string[]>, // Headers
-            System.Func< // Body
-                System.IO.Stream, // Output
-                System.Threading.Tasks.Task>>>>>;
+        System.Threading.Tasks.Task>>;
 using AppFunc = System.Func< // Call
         System.Collections.Generic.IDictionary<string, object>, // Environment
-        System.Collections.Generic.IDictionary<string, string[]>, // Headers
-        System.IO.Stream, // Body
-        System.Threading.Tasks.Task<System.Tuple< //Result
-            System.Collections.Generic.IDictionary<string, object>, // Properties
-            int, // Status
-            System.Collections.Generic.IDictionary<string, string[]>, // Headers
-            System.Func< // Body
-                System.IO.Stream, // Output
-                System.Threading.Tasks.Task>>>>; // Done
-using Result = System.Tuple< //Result
-        System.Collections.Generic.IDictionary<string, object>, // Properties
-        int, // Status
-        System.Collections.Generic.IDictionary<string, string[]>, // Headers
-        System.Func< // Body
-            System.IO.Stream, // Output
-            System.Threading.Tasks.Task>>; // Done
+        System.Threading.Tasks.Task>;
 
 namespace Fix
 {
@@ -107,40 +83,10 @@ namespace Fix
             }
         }
 
-        private static Task<Result> EmptyHandler(OwinEnvironment env, IDictionary<string,string[]> headers, Stream inputStream)
+        private static Task EmptyHandler(OwinEnvironment env)
         {
-            return TaskHelper.Completed(new Result(null, 404, null, null));
-        }
-    }
-
-    class MultiApp
-    {
-        private readonly AppFunc[] _appFuncs;
-
-        public MultiApp(AppFunc[] appFuncs)
-        {
-            _appFuncs = appFuncs;
-        }
-
-        public Task<Result> Handle(IDictionary<string,object> env, IDictionary<string,string[]> headers, Stream body)
-        {
-            var task = _appFuncs[0](env, headers, body);
-
-            for (int i = 1; i < _appFuncs.Length; i++)
-            {
-                int index = i;
-                task = task.ContinueWith(t =>
-                    {
-                        if (t.IsFaulted) return t;
-                        if (t.IsCanceled || t.Result.Item2 == 404)
-                        {
-                            return _appFuncs[index](env, headers, body);
-                        }
-                        return t;
-                    }, TaskContinuationOptions.None).Unwrap();
-            }
-
-            return task;
+            env[OwinKeys.ResponseStatusCode] = 404;
+            return TaskHelper.Completed();
         }
     }
 }

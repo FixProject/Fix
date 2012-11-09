@@ -2,7 +2,6 @@ namespace Fix
 {
     public static class OwinKeys
     {
-        public const string Version = "owin.Version";
         public const string CallCompleted = "owin.CallCompleted";
         public const string RequestScheme = "owin.RequestScheme";
         public const string RequestMethod = "owin.RequestMethod";
@@ -10,6 +9,18 @@ namespace Fix
         public const string RequestPath = "owin.RequestPath";
         public const string RequestQueryString = "owin.RequestQueryString";
         public const string RequestProtocol = "owin.RequestProtocol";
+
+        public const string RequestHeaders = "owin.RequestHeaders";
+        public const string RequestBody = "owin.RequestBody";
+
+        public const string ResponseBody = "owin.ResponseBody";
+        public const string ResponseHeaders = "owin.ResponseHeaders";
+        public const string ResponseStatusCode = "owin.ResponseStatusCode";
+        public const string ResponseReasonPhrase = "owin.ResponseReasonPhrase";
+        public const string ResponseProtocol = "owin.ResponseProtocol";
+
+        public const string Version = "owin.Version";
+        public const string CallCancelled = "owin.CallCancelled";
     }
 
     public static class ServerKeys

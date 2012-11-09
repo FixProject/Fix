@@ -9,26 +9,10 @@ namespace TestServer
     using System.Threading;
     using OwinEnvironment = IDictionary<string, object>;
     using OwinHeaders = IDictionary<string, string[]>;
-    using ResponseHandler = Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>;
-    using Starter = Action<Func<IDictionary<string, object>, IDictionary<string, string[]>, Stream, System.Threading.CancellationToken, Func<int, IDictionary<string, string[]>, Func<Stream, System.Threading.CancellationToken, Task>, Task>, Delegate, Task>>;
+    using Starter = Action<Func<IDictionary<string, object>, Task>>;
     using AppFunc = System.Func< // Call
         System.Collections.Generic.IDictionary<string, object>, // Environment
-        System.Collections.Generic.IDictionary<string, string[]>, // Headers
-        System.IO.Stream, // Body
-        System.Threading.Tasks.Task<System.Tuple< //Result
-            System.Collections.Generic.IDictionary<string, object>, // Properties
-            int, // Status
-            System.Collections.Generic.IDictionary<string, string[]>, // Headers
-            System.Func< // Body
-                System.IO.Stream, // Output
-                System.Threading.Tasks.Task>>>>; // Done
-    using Result = System.Tuple< //Result
-            System.Collections.Generic.IDictionary<string, object>, // Properties
-            int, // Status
-            System.Collections.Generic.IDictionary<string, string[]>, // Headers
-            System.Func< // Body
-                System.IO.Stream, // Output
-                System.Threading.Tasks.Task>>; // Done
+        System.Threading.Tasks.Task>;
     using System.Linq;
 
     public class Server : IDisposable
@@ -67,15 +51,11 @@ namespace TestServer
                 var app = (AppFunc) result.AsyncState;
                 var env = CreateEnvironmentHash(context.Request);
                 var headers = CreateRequestHeaders(context.Request);
-                app(env, headers, context.Request.InputStream)
+                app(env)
                     .ContinueWith(t =>
-                        {
-                            context.Response.StatusCode = t.Result.Item2 > 0 ? t.Result.Item2 : 404;
-                            WriteHeaders(t.Result.Item3, context);
-                            if (t.Result.Item4 != null)
-                            {
-                                return t.Result.Item4(context.Response.OutputStream);
-                            }
+                                      {
+                                          context.Response.StatusCode = (int) env["owin.ResponseStatusCode"];
+                            WriteHeaders((IDictionary<string,string[]>)env["owin.ResponseHeaders"], context);
                             return Complete();
                         }, TaskContinuationOptions.None)
                         .ContinueWith(t => context.Response.Close());
@@ -95,7 +75,7 @@ namespace TestServer
             return tcs.Task;
         }
 
-        private static void WriteHeaders(OwinHeaders outputHeaders, HttpListenerContext context)
+        private static void WriteHeaders(IEnumerable<KeyValuePair<string, string[]>> outputHeaders, HttpListenerContext context)
         {
             if (outputHeaders != null)
             {

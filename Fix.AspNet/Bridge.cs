@@ -5,6 +5,7 @@
     using System.ComponentModel.Composition;
     using System.ComponentModel.Composition.Hosting;
     using System.IO;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Web;
     using Fix;
@@ -12,22 +13,7 @@
     using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
     using AppFunc = System.Func< // Call
         System.Collections.Generic.IDictionary<string, object>, // Environment
-        System.Collections.Generic.IDictionary<string, string[]>, // Headers
-        System.IO.Stream, // Body
-        System.Threading.Tasks.Task<System.Tuple< //Result
-            System.Collections.Generic.IDictionary<string, object>, // Properties
-            int, // Status
-            System.Collections.Generic.IDictionary<string, string[]>, // Headers
-            System.Func< // Body
-                System.IO.Stream, // Output
-                System.Threading.Tasks.Task>>>>; // Done
-    using Result = System.Tuple< //Result
-            System.Collections.Generic.IDictionary<string, object>, // Properties
-            int, // Status
-            System.Collections.Generic.IDictionary<string, string[]>, // Headers
-            System.Func< // Body
-                System.IO.Stream, // Output
-                System.Threading.Tasks.Task>>; // Done
+        System.Threading.Tasks.Task>;
     using System.Linq;
 
     internal class Bridge
@@ -49,16 +35,22 @@
             var tcs = new TaskCompletionSource<object>();
             env.Add(OwinKeys.CallCompleted, tcs.Task);
             var headers = CreateRequestHeaders(context.Request);
-            var task = _app(env, headers, context.Request.InputStream);
+            var task = _app(env);
             return task
                 .ContinueWith(t =>
-                {
-                    context.Response.StatusCode = t.Result.Item2 > 0 ? t.Result.Item2 : 404;
-                    WriteHeaders(t.Result.Item3, context);
-                    if (t.Result.Item4 != null)
-                    {
-                        return t.Result.Item4(context.Response.OutputStream);
-                    }
+                                  {
+                                      if (!env.ContainsKey(OwinKeys.ResponseStatusCode))
+                                      {
+                                          context.Response.StatusCode = 404;
+                                      }
+                                      else
+                                      {
+                                          context.Response.StatusCode = (int) env[OwinKeys.ResponseStatusCode];
+                                      }
+                                      if (env.ContainsKey(OwinKeys.ResponseHeaders))
+                                      {
+                                          WriteHeaders((IDictionary<string,string[]>)env[OwinKeys.ResponseHeaders], context);
+                                      }
                     return TaskHelper.Completed();
                 }, TaskContinuationOptions.None)
                 .Unwrap()
@@ -139,7 +131,12 @@
                     {ServerKeys.LocalPort, request.ServerVariables["SERVER_PORT"]},
                     {OwinKeys.RequestProtocol, request.ServerVariables["HTTP_VERSION"]},
                     {OwinKeys.RequestScheme, request.Url.Scheme},
+                    {OwinKeys.RequestBody, request.InputStream},
+                    {OwinKeys.RequestHeaders, CreateRequestHeaders(request)},
                     {OwinKeys.Version, "1.0"},
+                    {OwinKeys.ResponseBody, context.Response.OutputStream},
+                    {OwinKeys.ResponseHeaders, new Dictionary<string,string[]>()},
+                    {OwinKeys.CallCancelled, new CancellationToken()},
                     {"aspnet.Context", context},
                 };
         }

@@ -14,7 +14,7 @@ namespace FixUp
             var prefix = args.Length == 1 ? args[0] : "http://*:3333/";
             using (var server = new Server(prefix))
             {
-                var fixer = new Fixer(server.Start, server.Stop);
+                var fixer = new Fixer(func => server.Start(func), server.Stop);
 
                 using (var catalog = new DirectoryCatalog(Environment.CurrentDirectory))
                 {

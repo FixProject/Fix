@@ -14,35 +14,62 @@ using App = System.Func<System.Collections.Generic.IDictionary<string, object>, 
 
 namespace FileHandler
 {
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Web;
 
     public class FileReturner
     {
         [Export("Owin.Application")]
-        public Task ReturnFile(IDictionary<string, object> env, IDictionary<string, string[]> headers, Stream body, CancellationToken cancellationToken, ResponseHandler responseHandler, Delegate next)
+        public Task ReturnFile(IDictionary<string, object> env)
         {
-            try
+            var tcs = new TaskCompletionSource<int>();
+            if (env.GetPath().ToLower().Equals("/index.html", StringComparison.CurrentCultureIgnoreCase))
             {
-                if (env.GetPath().ToLower().Equals("/index.html", StringComparison.CurrentCultureIgnoreCase))
+                try
                 {
-                    return HandleRequest(responseHandler);
+                    env["owin.ResponseHeaders"] = new Dictionary<string, string[]>
+                                                      {
+                                                          {
+                                                              "Content-Type",
+                                                              new[] {"text/html"}
+                                                          }
+                                                      };
+                    HandleRequest(env);
+                    env["owin.ResponseStatusCode"] = 200;
+                    tcs.SetResult(0);
                 }
-                else
+                catch (Exception ex)
                 {
-                    return next.InvokeAsNextApp(env, headers, body, cancellationToken, responseHandler);
+                    Trace.TraceError(ex.Message);
+                    tcs.SetCanceled();
                 }
             }
-            catch (Exception ex)
+            else
             {
-                return responseHandler(0, null, Body.FromException(ex));
+                tcs.SetCanceled();
             }
+            return tcs.Task;
         }
 
-        private static Task HandleRequest(ResponseHandler responseHandler)
+        private static void HandleRequest(IDictionary<string, object> env)
         {
-            var fileInfo = new FileInfo(Path.Combine(Environment.CurrentDirectory, "index.html"));
-            return responseHandler.WriteFile(fileInfo, "text/html");
+            var responseStream = (Stream) env["owin.ResponseBody"];
+            FileInfo fileInfo = null;
+            if (env.ContainsKey("aspnet.Context"))
+            {
+                var context = (HttpContext) env["aspnet.Context"];
+                fileInfo = new FileInfo(Path.Combine(context.Server.MapPath("bin"), "index.html"));
+            }
+            else
+            {
+                fileInfo = new FileInfo(Path.Combine(Environment.CurrentDirectory, "index.html"));
+            }
+            using (var source = fileInfo.OpenRead())
+            {
+                source.CopyTo(responseStream);
+            }
         }
     }
 }

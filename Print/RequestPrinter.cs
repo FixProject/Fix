@@ -5,22 +5,7 @@ using System.Text;
 using OwinHelpers;
 using AppFunc = System.Func< // Call
         System.Collections.Generic.IDictionary<string, object>, // Environment
-        System.Collections.Generic.IDictionary<string, string[]>, // Headers
-        System.IO.Stream, // Body
-        System.Threading.Tasks.Task<System.Tuple< //Result
-            System.Collections.Generic.IDictionary<string, object>, // Properties
-            int, // Status
-            System.Collections.Generic.IDictionary<string, string[]>, // Headers
-            System.Func< // Body
-                System.IO.Stream, // Output
-                System.Threading.Tasks.Task>>>>; // Done
-using Result = System.Tuple< //Result
-        System.Collections.Generic.IDictionary<string, object>, // Properties
-        int, // Status
-        System.Collections.Generic.IDictionary<string, string[]>, // Headers
-        System.Func< // Body
-            System.IO.Stream, // Output
-            System.Threading.Tasks.Task>>; // Done
+                System.Threading.Tasks.Task>; // Done
 
 namespace Print
 {
@@ -31,7 +16,7 @@ namespace Print
     public class RequestPrinter
     {
         [Export("Owin.Application")]
-        public Task<Result> PrintRequest(IDictionary<string, object> env, IDictionary<string, string[]> headers, Stream body)
+        public Task PrintRequest(IDictionary<string, object> env)
         {
             try
             {
@@ -48,11 +33,12 @@ namespace Print
             return TaskHelper.NotFound();
         }
 
-        private static Task<Result> HandlePrintRequest(IDictionary<string, object> env)
+        private static Task HandlePrintRequest(IDictionary<string, object> env)
         {
-            return TaskHelper.Completed(null, 200,
-                                        new Dictionary<string, string[]> {{"Content-Type", new[] {"text/html"}}},
-                                        stream => stream.WriteAsync(BuildHtml(env)));
+            env["owin.ResponseStatusCode"] = 200;
+            env["owin.ResponseHeaders"] =
+                new Dictionary<string, string[]> {{"Content-Type", new[] {"text/html"}}};
+            return ((Stream) env["owin.ResponseBody"]).WriteAsync(BuildHtml(env));
         }
 
         private static string BuildHtml(IDictionary<string, object> env)
@@ -70,8 +56,13 @@ namespace Print
 
         private static string ConstructUri(IDictionary<string,object> env)
         {
-            var builder = new StringBuilder(env["owin.RequestScheme"] + "://" + env["host.ServerName"]);
-            if (env["host.ServerPort"].ToString() != "80")
+            object serverName;
+            if (!env.TryGetValue("host.ServerName", out serverName))
+            {
+                serverName = "*";
+            }
+            var builder = new StringBuilder(env["owin.RequestScheme"] + "://" + serverName);
+            if (env.ContainsKey("host.ServerPort") && env["host.ServerPort"].ToString() != "80")
             {
                 builder.AppendFormat(":{0}", env["host.ServerPort"]);
             }
