@@ -4,7 +4,9 @@
     using System.Collections.Generic;
     using System.ComponentModel.Composition;
     using System.ComponentModel.Composition.Hosting;
+    using System.Diagnostics;
     using System.IO;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Web;
@@ -81,10 +83,26 @@
                 {
                     var fixer = new Fixer();
                     string path = Path.Combine(context.Request.PhysicalApplicationPath ?? Environment.CurrentDirectory, "bin");
-                    using (var catalog = new DirectoryCatalog(path))
+
+                    var aggregateCatalog = new AggregateCatalog();
+                    foreach (var file in Directory.EnumerateFiles(path, "*.dll"))
                     {
-                        var container = new CompositionContainer(catalog);
+                        var justFileName = Path.GetFileName(file);
+                        if (justFileName == null) continue;
+                        // Skip Microsoft DLLs, because they break MEF
+                        if (justFileName.StartsWith("Microsoft.") || justFileName.StartsWith("System.")) continue;
+                        var catalog = new AssemblyCatalog(file);
+                        aggregateCatalog.Catalogs.Add(catalog);
+                    }
+
+                    var container = new CompositionContainer(aggregateCatalog);
+                    try
+                    {
                         container.ComposeParts(fixer);
+                    }
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        throw;
                     }
                     _app = fixer.BuildApp();
                 }
