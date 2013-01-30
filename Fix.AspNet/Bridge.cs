@@ -21,7 +21,8 @@
     internal class Bridge
     {
         private static readonly object SyncApp = new object();
-        private static volatile AppFunc _app;
+        private static AppFunc _app;
+        private static IDictionary<string, string> _serverVariables;
 
         public static Task RunContext(HttpContext context)
         {
@@ -104,7 +105,10 @@
                     {
                         throw;
                     }
+
                     _app = fixer.BuildApp();
+                    _serverVariables = context.Request.ServerVariables.AllKeys
+                                              .ToDictionary(v => v, v => context.Request.ServerVariables.Get(v));
                 }
             }
         }
@@ -137,17 +141,29 @@
         private static OwinEnvironment CreateEnvironmentHash(HttpContext context)
         {
             var request = context.Request;
+            string localAddr;
+            string remoteAddr;
+            string remotePort;
+            string serverPort;
+            string httpVersion;
+
+            _serverVariables.TryGetValue("LOCAL_ADDR", out localAddr);
+            _serverVariables.TryGetValue("REMOTE_ADDR", out remoteAddr);
+            _serverVariables.TryGetValue("REMOTE_PORT", out remotePort);
+            _serverVariables.TryGetValue("SERVER_PORT", out serverPort);
+            _serverVariables.TryGetValue("HTTP_VERSION", out httpVersion);
+
             return new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
                 {
                     {OwinKeys.RequestMethod, request.HttpMethod},
                     {OwinKeys.RequestPath, request.Url.AbsolutePath},
                     {OwinKeys.RequestPathBase, string.Empty},
                     {OwinKeys.RequestQueryString, request.Url.Query.TrimStart('?')},
-                    {ServerKeys.LocalIpAddress, request.ServerVariables["LOCAL_ADDR"]},
-                    {ServerKeys.RemoteIpAddress, request.ServerVariables["REMOTE_ADDR"]},
-                    {ServerKeys.RemotePort, request.ServerVariables["REMOTE_PORT"]},
-                    {ServerKeys.LocalPort, request.ServerVariables["SERVER_PORT"]},
-                    {OwinKeys.RequestProtocol, request.ServerVariables["HTTP_VERSION"]},
+                    {ServerKeys.LocalIpAddress, localAddr},
+                    {ServerKeys.RemoteIpAddress, remoteAddr},
+                    {ServerKeys.RemotePort, remotePort},
+                    {ServerKeys.LocalPort, serverPort},
+                    {OwinKeys.RequestProtocol, httpVersion},
                     {OwinKeys.RequestScheme, request.Url.Scheme},
                     {OwinKeys.RequestBody, request.InputStream},
                     {OwinKeys.RequestHeaders, CreateRequestHeaders(request)},
