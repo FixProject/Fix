@@ -42,20 +42,31 @@
             return task
                 .ContinueWith(t =>
                                   {
-                                      if (!env.ContainsKey(OwinKeys.ResponseStatusCode))
+                                      if (t.Exception != null)
+                                      {
+                                          context.Response.StatusCode = 500;
+                                          
+                                          foreach (Exception ex in t.Exception.InnerExceptions)
+                                          {
+                                              context.AddError(ex);
+                                          }
+                                      }
+                                      else if (!env.ContainsKey(OwinKeys.ResponseStatusCode))
                                       {
                                           context.Response.StatusCode = 404;
                                       }
                                       else
                                       {
-                                          context.Response.StatusCode = (int) env[OwinKeys.ResponseStatusCode];
+                                          context.Response.StatusCode = (int)env[OwinKeys.ResponseStatusCode];
                                       }
+
                                       if (env.ContainsKey(OwinKeys.ResponseHeaders))
                                       {
-                                          WriteHeaders((IDictionary<string,string[]>)env[OwinKeys.ResponseHeaders], context);
+                                          WriteHeaders((IDictionary<string, string[]>)env[OwinKeys.ResponseHeaders], context);
                                       }
-                    return TaskHelper.Completed();
-                }, TaskContinuationOptions.None)
+                                      return TaskHelper.Completed();
+
+                                  }, TaskContinuationOptions.None)
                 .Unwrap()
                 .ContinueWith(t => SetOwinCallCompleted(t, tcs));
         }
