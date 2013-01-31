@@ -96,14 +96,7 @@
                     }
 
                     var container = new CompositionContainer(aggregateCatalog);
-                    try
-                    {
-                        container.ComposeParts(fixer);
-                    }
-                    catch (ReflectionTypeLoadException ex)
-                    {
-                        throw;
-                    }
+                    container.ComposeParts(fixer);
                     _app = fixer.BuildApp();
                 }
             }

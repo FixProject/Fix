@@ -22,8 +22,6 @@ namespace Fix
         private readonly Starter _starter;
         private readonly Action _stopper;
         private int _startCallCount;
-        private int _buildCallCount;
-        private int _handlerCount;
         private AppFunc _app;
 
         [ImportMany("Owin.Application")]
