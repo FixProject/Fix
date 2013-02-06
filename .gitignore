@@ -17,3 +17,10 @@ Fix.sln.DotSettings.user
 *.nupkg
 nohup.out
 build
+src/CommonAssemblyInfo.cs
+Gemfile.lock
+results
+nuget
+src/packages/*
+!src/packages/repositories.config
+artifacts

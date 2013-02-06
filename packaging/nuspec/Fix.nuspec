@@ -10,9 +10,10 @@
     <projectUrl>http://github.com/markrendle/Fix</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>A glue for OWIN.</description>
+    <summary>A glue for OWIN.</summary>
     <tags>fix owin http</tags>
   </metadata>
   <files>
-    <file src="build\Fix.dll" target="lib\net40" />
+    <file src="..\..\build\Fix.dll" target="lib\net40" />
   </files>
 </package>

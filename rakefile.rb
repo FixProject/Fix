@@ -50,7 +50,7 @@ SPEC_ASSEMBLY_PATTERN = ".Specs"
 # Commands
 XUNIT_COMMAND = "#{TOOLS_PATH}/xUnit/xunit.console.clr4.#{(PLATFORM.empty? or PLATFORM.eql?('x86') ? 'x86' : '')}.exe"
 MSPEC_COMMAND = "#{TOOLS_PATH}/mspec/mspec.exe"
-NUGET_COMMAND = "#{SOURCE_PATH}/.nuget/NuGet.exe"
+NUGET_COMMAND = "#{TOOLS_PATH}/nuget/NuGet.exe"
 
 # Set up our build system
 require 'albacore'
