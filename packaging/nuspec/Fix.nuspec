@@ -15,5 +15,7 @@
   </metadata>
   <files>
     <file src="..\..\build\Fix.dll" target="lib\net40" />
+    <file src="..\..\build\Fix.*db" target="lib\net40" />
+    <file src="..\..\src\Fix\**\*.cs" target="src" />
   </files>
 </package>

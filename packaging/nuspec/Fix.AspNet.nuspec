@@ -18,5 +18,7 @@
   </metadata>
   <files>
     <file src="..\..\build\Fix.AspNet.dll" target="lib\net40" />
+    <file src="..\..\build\Fix.AspNet.*db" target="lib\net40" />
+    <file src="..\..\src\Fix.AspNet\**\*.cs" target="src" />
   </files>
 </package>
