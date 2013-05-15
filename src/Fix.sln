@@ -34,6 +34,22 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{5E40E1
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fix.Katana", "Fix.Katana\Fix.Katana.csproj", "{2F625525-88A1-4BF1-8299-391F3C029DD2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{3A758F10-89E7-4AF6-8243-35F4FF11AC8F}"
+	ProjectSection(SolutionItems) = preProject
+		..\packaging\nuspec\Fix.AspNet.nuspec = ..\packaging\nuspec\Fix.AspNet.nuspec
+		..\packaging\nuspec\Fix.Katana.nuspec = ..\packaging\nuspec\Fix.Katana.nuspec
+		..\packaging\nuspec\Fix.nuspec = ..\packaging\nuspec\Fix.nuspec
+		..\Gemfile = ..\Gemfile
+		..\InstallGems.bat = ..\InstallGems.bat
+		..\installgems.sh = ..\installgems.sh
+		..\LICENSE.txt = ..\LICENSE.txt
+		..\rakefile.rb = ..\rakefile.rb
+		..\README.md = ..\README.md
+		..\VERSION.txt = ..\VERSION.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -144,6 +160,16 @@ Global
 		{CCAC0A87-18F1-4DB9-BF12-9185A81917CD}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{CCAC0A87-18F1-4DB9-BF12-9185A81917CD}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{CCAC0A87-18F1-4DB9-BF12-9185A81917CD}.Release|x86.ActiveCfg = Release|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{2F625525-88A1-4BF1-8299-391F3C029DD2}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
