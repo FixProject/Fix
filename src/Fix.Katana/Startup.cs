@@ -1,4 +1,6 @@
-﻿namespace Fix.Katana
+﻿[assembly: Microsoft.Owin.OwinStartup(typeof(Fix.Katana.Startup))]
+
+namespace Fix.Katana
 {
     using System;
     using System.Collections.Generic;
@@ -11,7 +13,7 @@
     using Owin;
 
     using AppFunc = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Threading.Tasks.Task>;
-
+    
     /// <summary>
     /// Startup class for discovery by katana.exe
     /// </summary>
