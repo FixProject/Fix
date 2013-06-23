@@ -13,7 +13,7 @@
     using AppFunc = System.Func<System.Collections.Generic.IDictionary<string, object>, System.Threading.Tasks.Task>;
 
     /// <summary>
-    /// Example custom engine usage, e.g. https://gist.github.com/ianbattersby/5587478
+    /// Startup class for discovery by katana.exe
     /// </summary>
     public class Startup
     {
@@ -42,7 +42,6 @@
         /// If we are using katana from command-line w/discovery we need to hookup, so
         /// we can't leave this to custom katana engine usage. 
         /// </summary>
-        // TODO: This is the same as AspNet, if it sticks move to Fix.
         private void BuildApp(string appPath = null)
         {
             lock (SyncApp)
