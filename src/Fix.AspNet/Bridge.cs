@@ -109,7 +109,7 @@
 
                     var container = new CompositionContainer(aggregateCatalog);
                     container.ComposeParts(fixer);
-                    _app = fixer.BuildApp();
+                    _app = null; //fixer.BuildApp();
                     _serverVariables = context.Request.ServerVariables.AllKeys
                                               .ToDictionary(v => v, v => context.Request.ServerVariables.Get(v));
                 }
