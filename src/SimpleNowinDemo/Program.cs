@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SimpleNowinDemo
 {
@@ -15,10 +11,17 @@ namespace SimpleNowinDemo
     {
         static void Main()
         {
-            var fixer = new Fixer();
-            fixer.Use((e, t) => Application.Run(e));
+            // Build the OWIN app
+            var app = new Fixer()
+                .Use((e, t) => Application.Run(e)) //TODO: Add the next task parameter to Simple.Web.Application's Run method
+                .Build();
 
-            var builder = ServerBuilder.New().SetPort(1337).SetOwinApp(fixer.Build());
+            // Set up the Nowin server
+            var builder = ServerBuilder.New()
+                .SetPort(1337)
+                .SetOwinApp(app);
+
+            // Run
             using (builder.Start())
             {
                 Console.WriteLine("Listening on port 1337. Enter to exit.");
