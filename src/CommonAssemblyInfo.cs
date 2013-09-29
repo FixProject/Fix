@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCompany("Mark Rendle")]
 [assembly: AssemblyProduct("Fix")]
 [assembly: AssemblyCopyright("Copyright (C) Mark Rendle 2010-2013")]
-[assembly: AssemblyTrademark("9fd7b5f99acb94c0bfa38c5069cba507721e52ca")]
+[assembly: AssemblyTrademark("de8b355857e402624edcefd62d045a7c9fdab591")]
 [assembly: ComVisible(false)]
 [assembly: AssemblyVersion("0.0.0.0")]
 [assembly: AssemblyFileVersion("0.0.0.0")]
