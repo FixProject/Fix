@@ -5,9 +5,11 @@
     using System.ComponentModel.Composition;
     using System.ComponentModel.Composition.Hosting;
     using System.IO;
+    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Web;
+    using System.Web.Compilation;
     using Fix;
     using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
     using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
@@ -91,7 +93,7 @@
             {
                 if (_app != null) return;
 
-                _app = AppFuncBuilder.Build();
+                _app = AppFuncBuilder.Create(BuildManager.GetReferencedAssemblies().Cast<Assembly>()).Build();
                 _serverVariables = context.Request.ServerVariables.AllKeys
                     .ToDictionary(v => v, v => context.Request.ServerVariables.Get(v));
             }

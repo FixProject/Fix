@@ -44,10 +44,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AppFuncBuilder.cs" />
+    <Compile Include="AssemblyManager.cs" />
     <Compile Include="Body.cs" />
     <Compile Include="EnumerableEx.cs" />
     <Compile Include="ExceptionBody.cs" />
     <Compile Include="Fixer.cs" />
+    <Compile Include="IFixAdapter.cs" />
     <Compile Include="OwinKeys.cs" />
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
