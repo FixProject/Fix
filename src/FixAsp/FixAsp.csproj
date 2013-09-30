@@ -64,6 +64,7 @@
     <Compile Include="..\CommonAssemblyInfo.cs">
       <Link>Properties\CommonAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="OwinAppSetup.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Web.Debug.config">
@@ -87,10 +88,6 @@
     <ProjectReference Include="..\Fix\Fix.csproj">
       <Project>{AE24B4A3-30AE-4479-BB37-A37BB65BFBC0}</Project>
       <Name>Fix</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Info\Info.csproj">
-      <Project>{606bac3f-f5a2-46a9-affb-edf7231850fd}</Project>
-      <Name>Info</Name>
     </ProjectReference>
     <ProjectReference Include="..\Print\Print.csproj">
       <Project>{0316d0f1-ef56-41de-a501-68dc0dff8e5e}</Project>

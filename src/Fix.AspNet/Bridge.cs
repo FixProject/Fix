@@ -4,12 +4,12 @@
     using System.Collections.Generic;
     using System.ComponentModel.Composition;
     using System.ComponentModel.Composition.Hosting;
-    using System.Diagnostics;
     using System.IO;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Web;
+    using System.Web.Compilation;
     using Fix;
     using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
     using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
@@ -91,28 +91,11 @@
         {
             lock (SyncApp)
             {
-                if (_app == null)
-                {
-                    var fixer = new Fixer();
-                    string path = Path.Combine(context.Request.PhysicalApplicationPath ?? Environment.CurrentDirectory, "bin");
+                if (_app != null) return;
 
-                    var aggregateCatalog = new AggregateCatalog();
-                    foreach (var file in Directory.EnumerateFiles(path, "*.dll"))
-                    {
-                        var justFileName = Path.GetFileName(file);
-                        if (justFileName == null) continue;
-                        // Skip Microsoft DLLs, because they break MEF
-                        if (justFileName.StartsWith("Microsoft.") || justFileName.StartsWith("System.")) continue;
-                        var catalog = new AssemblyCatalog(file);
-                        aggregateCatalog.Catalogs.Add(catalog);
-                    }
-
-                    var container = new CompositionContainer(aggregateCatalog);
-                    container.ComposeParts(fixer);
-                    _app = fixer.BuildApp();
-                    _serverVariables = context.Request.ServerVariables.AllKeys
-                                              .ToDictionary(v => v, v => context.Request.ServerVariables.Get(v));
-                }
+                _app = AppFuncBuilder.Create(BuildManager.GetReferencedAssemblies().Cast<Assembly>()).Build();
+                _serverVariables = context.Request.ServerVariables.AllKeys
+                    .ToDictionary(v => v, v => context.Request.ServerVariables.Get(v));
             }
         }
 

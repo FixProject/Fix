@@ -1,0 +1,46 @@
+﻿using System;
+
+namespace SimpleNowinDemo
+{
+    using Fix;
+    using Nowin;
+    using Simple.Web;
+    using Simple.Web.Behaviors;
+
+    class Program
+    {
+        static void Main()
+        {
+            // Build the OWIN app
+            var app = new Fixer()
+                .Use((e, t) => Application.Run(e)) //TODO: Add the next task parameter to Simple.Web.Application's Run method
+                .Build();
+
+            // Set up the Nowin server
+            var builder = ServerBuilder.New()
+                .SetPort(1337)
+                .SetOwinApp(app);
+
+            // Run
+            using (builder.Start())
+            {
+                Console.WriteLine("Listening on port 1337. Enter to exit.");
+                Console.ReadLine();
+            }
+        }
+    }
+
+    [UriTemplate("/")]
+    public class Index : IGet, IOutput<RawHtml>
+    {
+        public Status Get()
+        {
+            return 200;
+        }
+
+        public RawHtml Output
+        {
+            get { return "<h1>Ta dah!</h1>"; }
+        }
+    }
+}

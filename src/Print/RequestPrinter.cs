@@ -16,7 +16,7 @@ namespace Print
     public class RequestPrinter
     {
         [Export("Owin.Application")]
-        public Task PrintRequest(IDictionary<string, object> env)
+        public Task PrintRequest(IDictionary<string, object> env, Func<Task> next)
         {
             try
             {
@@ -30,7 +30,7 @@ namespace Print
             {
                 return TaskHelper.Error(ex);
             }
-            return TaskHelper.NotFound();
+            return next();
         }
 
         private static Task HandlePrintRequest(IDictionary<string, object> env)

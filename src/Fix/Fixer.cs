@@ -1,90 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
-using System.Linq;
-using System.Threading;
-using OwinEnvironment = System.Collections.Generic.IDictionary<string, object>;
-using OwinHeaders = System.Collections.Generic.IDictionary<string, string[]>;
-using Starter = System.Action<System.Func< // Call
-        System.Collections.Generic.IDictionary<string, object>, // Environment
-        System.Threading.Tasks.Task>>;
-using AppFunc = System.Func< // Call
-        System.Collections.Generic.IDictionary<string, object>, // Environment
-        System.Threading.Tasks.Task>;
+using System.Threading.Tasks;
 
 namespace Fix
 {
-    using System.IO;
-    using System.Threading.Tasks;
+    using System.Threading;
+    using Env = IDictionary<string, object>;
+    using ComponentFunc = Func<IDictionary<string, object>, Func<Task>, Task>;
+    using AppFunc = Func<IDictionary<string, object>, Task>;
 
     public class Fixer
     {
-        private readonly Starter _starter;
-        private readonly Action _stopper;
-        private int _startCallCount;
-        private AppFunc _app;
+        private readonly Stack<ComponentFunc> _funcs = new Stack<ComponentFunc>();
+        private int _useCount = 0;
 
-        [ImportMany("Owin.Application")]
-        private IEnumerable<AppFunc> _handlers;
-
-        [ImportMany("Owin.Middleware")]
-        private IEnumerable<Func<AppFunc, AppFunc>> _infixes;
-
-        public Fixer()
+        public Fixer Use(ComponentFunc component)
         {
-            _app = EmptyHandler;
+            _funcs.Push(component);
+            return this;
         }
 
-        public Fixer(Starter starter, Action stopper) : this()
+        public AppFunc Build()
         {
-            if (starter == null) throw new ArgumentNullException("starter");
-            if (stopper == null) throw new ArgumentNullException("stopper");
-
-            _starter = starter;
-            _stopper = stopper;
-        }
-
-        public AppFunc BuildApp()
-        {
-            var handlers = _handlers.ToArray();
-            if (handlers.Length == 0) throw new InvalidOperationException("No application found.");
-            if (handlers.Length > 1)
+            if (Interlocked.Increment(ref _useCount) > 1)
             {
-                _app = new MultiApp(handlers).Handle;
+                throw new InvalidOperationException("Fixer instances may only be used once.");
             }
-            else
+
+            var lastFunc = _funcs.Pop();
+            AppFunc f = env => lastFunc(env, Completed);
+
+            while (_funcs.Count > 0)
             {
-                _app = handlers[0];
+                var func = _funcs.Pop();
+                var f1 = f;
+                f = env => func(env, () => f1(env));
             }
-            AddInfixes();
-            return _app;
+
+            return f;
         }
 
-        public void Start()
+        private static Task Completed()
         {
-            if (Interlocked.Increment(ref _startCallCount) > 1) throw new InvalidOperationException("Fixer has been used.");
-            BuildApp();
-            _starter(_app);
-        }
-
-        public void Stop()
-        {
-            _stopper();
-        }
-
-        private void AddInfixes()
-        {
-            if (_infixes == null) return;
-            foreach (var infix in _infixes)
-            {
-                _app = infix(_app);
-            }
-        }
-
-        private static Task EmptyHandler(OwinEnvironment env)
-        {
-            env[OwinKeys.ResponseStatusCode] = 404;
-            return TaskHelper.Completed();
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetResult(0);
+            return tcs.Task;
         }
     }
 }
