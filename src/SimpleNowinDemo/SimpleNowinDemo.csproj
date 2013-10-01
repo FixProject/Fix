@@ -37,8 +37,9 @@
     <Reference Include="Nowin">
       <HintPath>..\packages\Nowin.0.9.1.0\lib\net45\Nowin.dll</HintPath>
     </Reference>
-    <Reference Include="Simple.Web">
-      <HintPath>..\packages\Simple.Web.0.10.0.51102\lib\net40\Simple.Web.dll</HintPath>
+    <Reference Include="Simple.Web, Version=0.10.2.50111, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Simple.Web.0.10.2.50111\lib\net40\Simple.Web.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

@@ -13,7 +13,7 @@ namespace SimpleNowinDemo
         {
             // Build the OWIN app
             var app = new Fixer()
-                .Use((e, t) => Application.Run(e)) //TODO: Add the next task parameter to Simple.Web.Application's Run method
+                .Use(Application.Run)
                 .Build();
 
             // Set up the Nowin server
