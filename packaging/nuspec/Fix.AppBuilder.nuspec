@@ -7,7 +7,7 @@
     <owners>Mark Rendle</owners>
     <copyright>Mark Rendle</copyright>
     <licenseUrl>http://www.opensource.org/licenses/mit-license.php</licenseUrl>
-    <projectUrl>http://github.com/markrendle/Fix</projectUrl>
+    <projectUrl>http://github.com/FixProject/Fix</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <summary>A glue for OWIN.</summary>
     <description>Owin.IAppBuilder support for Fix, a glue for OWIN.</description>
