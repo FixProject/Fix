@@ -17,7 +17,7 @@
 
         public IAppBuilder Use(object middleware, params object[] args)
         {
-            var properFunc = middleware as Func<IDictionary<string, object>, Func<Task>, Task>;
+            var properFunc = middleware as Func<IDictionary<string, object>, Func<IDictionary<string, object>, Task>, Task>;
             if (properFunc != null)
             {
                 _fixer.Use(properFunc);

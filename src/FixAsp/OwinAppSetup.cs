@@ -9,7 +9,7 @@ namespace FixAsp
     using UseAction = Action<
         Func<
             IDictionary<string, object>, // OWIN Environment
-            Func<Task>, // Next component in pipeline
+            Func<IDictionary<string, object>, Task>, // Next component in pipeline
             Task // Return
         >
     >;

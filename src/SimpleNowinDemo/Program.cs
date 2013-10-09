@@ -13,7 +13,7 @@ namespace SimpleNowinDemo
         {
             // Build the OWIN app
             var app = new Fixer()
-                .Use(Application.Run)
+                .Use((env, next) => Application.Run(env, () => next(env)))
                 .Build();
 
             // Set up the Nowin server

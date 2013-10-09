@@ -76,7 +76,7 @@ namespace Fix
             }
             if (parameters[0] == null)
             {
-                parameters[0] = new Action<Func<IDictionary<string, object>, Func<Task>, Task>>(f => fixer.Use(f));
+                parameters[0] = new Action<Func<IDictionary<string, object>, Func<IDictionary<string, object>, Task>, Task>>(f => fixer.Use(f));
             }
 
             fixerSetupMethod.Invoke(instance, parameters);
@@ -143,7 +143,7 @@ namespace Fix
             try
             {
                 var parameters = methodInfo.GetParameters();
-                return parameters.Length == 1 && parameters[0].ParameterType == typeof (Action<Func<IDictionary<string, object>, Func<Task>, Task>>);
+                return parameters.Length == 1 && parameters[0].ParameterType == typeof(Action<Func<IDictionary<string, object>, Func<IDictionary<string, object>, Task>, Task>>);
             }
             catch
             {

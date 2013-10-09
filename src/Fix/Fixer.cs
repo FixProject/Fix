@@ -6,7 +6,7 @@ namespace Fix
 {
     using System.Threading;
     using Env = IDictionary<string, object>;
-    using ComponentFunc = Func<IDictionary<string, object>, Func<Task>, Task>;
+    using ComponentFunc = Func<IDictionary<string, object>, Func<IDictionary<string, object>,Task>, Task>;
     using AppFunc = Func<IDictionary<string, object>, Task>;
 
     public class Fixer
@@ -34,13 +34,13 @@ namespace Fix
             {
                 var func = _funcs.Pop();
                 var f1 = f;
-                f = env => func(env, () => f1(env));
+                f = env => func(env, f1);
             }
 
             return f;
         }
 
-        private static Task Completed()
+        private static Task Completed(IDictionary<string, object> _)
         {
             var tcs = new TaskCompletionSource<int>();
             tcs.SetResult(0);

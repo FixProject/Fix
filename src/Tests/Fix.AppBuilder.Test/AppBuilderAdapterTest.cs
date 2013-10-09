@@ -28,10 +28,10 @@ namespace Fix.AppBuilder.Test
     {
         public static void Setup(IAppBuilder app)
         {
-            app.Use((Func<IDictionary<string,object>, Func<Task>, Task>)Run);
+            app.Use((Func<IDictionary<string,object>, Func<IDictionary<string, object>, Task>, Task>)Run);
         }
 
-        private static Task Run(IDictionary<string, object> env, Func<Task> next)
+        private static Task Run(IDictionary<string, object> env, Func<IDictionary<string, object>, Task> next)
         {
             env["Test"] = "Passed";
             var tcs = new TaskCompletionSource<int>();
