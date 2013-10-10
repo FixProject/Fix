@@ -41,11 +41,23 @@ namespace Fix
         private static void LoadAdapters(IEnumerable<Assembly> assemblies)
         {
             var adapters =
-                assemblies.SelectMany(a => a.GetExportedTypes().Where(t => !t.IsInterface).Where(typeof (IFixerAdapter).IsAssignableFrom))
+                assemblies.SelectMany(TryGetExportedFixerAdapterTypes)
                     .Distinct()
                     .Select(Activator.CreateInstance)
                     .Cast<IFixerAdapter>();
             _adapters = new List<IFixerAdapter>(adapters);
+        }
+
+        private static IEnumerable<Type> TryGetExportedFixerAdapterTypes(Assembly a)
+        {
+            try
+            {
+                return a.GetExportedTypes().Where(t => !t.IsInterface).Where(typeof(IFixerAdapter).IsAssignableFrom);
+            }
+            catch (Exception)
+            {
+                return Enumerable.Empty<Type>();
+            }
         }
 
         private const BindingFlags MethodBindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -86,7 +98,7 @@ namespace Fix
         private MethodInfo FindFixerSetupMethod()
         {
             var fixerSetupMethods = _assemblies
-                .SelectMany(a => a.GetExportedTypes().Where(t => t.Name.Equals("OwinAppSetup")).Select(FixerMethod))
+                .SelectMany(TryGetExportedFixerMethods)
                 .Where(m => !ReferenceEquals(m, null))
                 .ToList();
 
@@ -99,6 +111,18 @@ namespace Fix
 
             var fixerSetupMethod = fixerSetupMethods.Single();
             return fixerSetupMethod;
+        }
+
+        private static IEnumerable<MethodInfo> TryGetExportedFixerMethods(Assembly a)
+        {
+            try
+            {
+                return a.GetExportedTypes().Where(t => t.Name.Equals("OwinAppSetup")).Select(FixerMethod);
+            }
+            catch (Exception)
+            {
+                return Enumerable.Empty<MethodInfo>();
+            }
         }
 
         private static MethodInfo FixerMethod(Type type)

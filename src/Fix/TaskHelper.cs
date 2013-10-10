@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Fix
+﻿namespace Fix
 {
     using System.Threading.Tasks;
 
@@ -11,8 +6,8 @@ namespace Fix
     {
         public static Task Completed()
         {
-            var tcs = new TaskCompletionSource<object>();
-            tcs.SetResult(null);
+            var tcs = new TaskCompletionSource<int>();
+            tcs.SetResult(0);
             return tcs.Task;
         }
         

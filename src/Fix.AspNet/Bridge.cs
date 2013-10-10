@@ -2,9 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel.Composition;
-    using System.ComponentModel.Composition.Hosting;
-    using System.IO;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
@@ -34,10 +31,10 @@
                     throw new InvalidOperationException("No application found.");
                 }
             }
+            
             var env = CreateEnvironmentHash(context);
             var tcs = new TaskCompletionSource<object>();
             env.Add(OwinKeys.CallCompleted, tcs.Task);
-            var headers = CreateRequestHeaders(context.Request);
             var task = _app(env);
             return task
                 .ContinueWith(t =>
@@ -139,7 +136,7 @@
             _serverVariables.TryGetValue("SERVER_PORT", out serverPort);
             _serverVariables.TryGetValue("HTTP_VERSION", out httpVersion);
 
-            return new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+            return new Dictionary<string, object>(StringComparer.Ordinal)
                 {
                     {OwinKeys.RequestMethod, request.HttpMethod},
                     {OwinKeys.RequestPath, request.Url.AbsolutePath},
@@ -157,8 +154,19 @@
                     {OwinKeys.ResponseBody, context.Response.OutputStream},
                     {OwinKeys.ResponseHeaders, new Dictionary<string,string[]>()},
                     {OwinKeys.CallCancelled, new CancellationToken()},
+                    {SendFileKeys.SendAsync, CreateSendFileFunc(context.Response)},
                     {"aspnet.Context", context},
                 };
+        }
+
+        private static Func<string, long, long?, CancellationToken, Task> CreateSendFileFunc(HttpResponse response)
+        {
+            return (path, offset, byteCount, cancel) =>
+            {
+                var length = byteCount.HasValue ? byteCount.Value : -1;
+                response.TransmitFile(path, offset, length);
+                return TaskHelper.Completed();
+            };
         }
 
         private static IDictionary<string, string[]> CreateRequestHeaders(HttpRequest request)

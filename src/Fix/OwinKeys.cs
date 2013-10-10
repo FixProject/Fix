@@ -31,4 +31,12 @@ namespace Fix
         public const string LocalPort = "server.LocalPort";
         public const string IsLocal = "server.IsLocal";
     }
+
+    public static class SendFileKeys
+    {
+        public const string Version = "sendfile.Version";
+        public const string Support = "sendfile.Support";
+        public const string Concurrency = "sendfile.Concurrency";
+        public const string SendAsync = "sendfile.SendAsync";
+    }
 }
