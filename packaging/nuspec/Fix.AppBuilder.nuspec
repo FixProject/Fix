@@ -17,8 +17,8 @@
     </dependencies>
   </metadata>
   <files>
-    <file src='..\..\build\net40\Fix.AppBuilder.dll' target='lib\net40' />
-    <file src='..\..\build\net40\Fix.AppBuilder.*db' target='lib\net40' />
+    <file src='..\..\build\net40\Fix.AppBuilder4.dll' target='lib\net40' />
+    <file src='..\..\build\net40\Fix.AppBuilder4.*db' target='lib\net40' />
     <file src='..\..\build\net45\Fix.AppBuilder.dll' target='lib\net45' />
     <file src='..\..\build\net45\Fix.AppBuilder.*db' target='lib\net45' />
     <file src='..\..\src\Fix.AppBuilder\**\*.cs' target='src' />
