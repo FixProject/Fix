@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Net.Mail;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
@@ -139,8 +140,8 @@
             return new Dictionary<string, object>(StringComparer.Ordinal)
                 {
                     {OwinKeys.RequestMethod, request.HttpMethod},
-                    {OwinKeys.RequestPath, request.Url.AbsolutePath},
-                    {OwinKeys.RequestPathBase, string.Empty},
+                    {OwinKeys.RequestPath, request.AppRelativeCurrentExecutionFilePath.MaybeSubstring(1) + request.PathInfo},
+                    {OwinKeys.RequestPathBase, FixPath(HttpRuntime.AppDomainAppVirtualPath)},
                     {OwinKeys.RequestQueryString, request.Url.Query.TrimStart('?')},
                     {ServerKeys.LocalIpAddress, localAddr},
                     {ServerKeys.RemoteIpAddress, remoteAddr},
@@ -173,6 +174,21 @@
         {
             return request.Headers.AllKeys.ToDictionary(k => k, k => request.Headers.GetValues(k),
                                                         StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string FixPath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path) || path == "/") return string.Empty;
+
+            return path[0] == '/' ? path : '/' + path;
+        }
+    }
+
+    static class StringMaybe
+    {
+        public static string MaybeSubstring(this string str, int index)
+        {
+            return str == null ? string.Empty : str.Substring(1);
         }
     }
 }
