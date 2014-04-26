@@ -1,9 +1,11 @@
-﻿namespace Fix.AppBuilder
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Owin;
+
+namespace Fix.AppBuilder
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Owin;
+    using AppFunc = Func<IDictionary<string,object>, Task>;
 
     class FixAppBuilder : IAppBuilder
     {
@@ -17,7 +19,7 @@
 
         public IAppBuilder Use(object middleware, params object[] args)
         {
-            var properFunc = middleware as Func<IDictionary<string, object>, Func<IDictionary<string, object>, Task>, Task>;
+            var properFunc = middleware as Func<AppFunc, AppFunc>;
             if (properFunc != null)
             {
                 _fixer.Use(properFunc);

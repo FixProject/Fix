@@ -7,19 +7,13 @@ namespace FixAsp
 {
     using System.Text;
     using Fix;
-    using UseAction = Action<
-        Func<
-            IDictionary<string, object>, // OWIN Environment
-            Func<IDictionary<string, object>, Task>, // Next component in pipeline
-            Task // Return
-        >
-    >;
+    using AppFunc = Func<IDictionary<string, object>, Task>;
 
     public static class OwinAppSetup
     {
-        public static void Setup(UseAction use)
+        public static void Setup(Action<Func<AppFunc,AppFunc>>  use)
         {
-            use(async (env, next) =>
+            use(next => async env =>
             {
                 var stream = (Stream) env["owin.ResponseBody"];
                 await stream.WriteAsync("<h1>OWIN!</h1>");

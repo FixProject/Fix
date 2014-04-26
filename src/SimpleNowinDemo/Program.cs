@@ -13,18 +13,18 @@ namespace SimpleNowinDemo
         {
             // Build the OWIN app
             var app = new Fixer()
-                .Use((env, next) => Application.Run(env, () => next(env)))
+                .Use(next => env => Application.Run(env, () => next(env)))
                 .Build();
 
             // Set up the Nowin server
             var builder = ServerBuilder.New()
-                .SetPort(1337)
+                .SetPort(31337)
                 .SetOwinApp(app);
 
             // Run
             using (builder.Start())
             {
-                Console.WriteLine("Listening on port 1337. Enter to exit.");
+                Console.WriteLine("Listening on port 31337. Enter to exit.");
                 Console.ReadLine();
             }
         }

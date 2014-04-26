@@ -25,3 +25,5 @@ nuget
 src/packages/*
 !src/packages/repositories.config
 artifacts
+src/Fix.sln.ide
+

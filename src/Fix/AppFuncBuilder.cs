@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace Fix
 {
     using UseAction = Action<Func<IDictionary<string, object>, Func<Task>, Task>>;
+    using AppFunc = Func<IDictionary<string,object>, Task>;
 
     public class AppFuncBuilder
     {
@@ -88,7 +89,7 @@ namespace Fix
             }
             if (parameters[0] == null)
             {
-                parameters[0] = new Action<Func<IDictionary<string, object>, Func<IDictionary<string, object>, Task>, Task>>(f => fixer.Use(f));
+                parameters[0] = new Action<Func<AppFunc,AppFunc>>(f => fixer.Use(f));
             }
 
             fixerSetupMethod.Invoke(instance, parameters);
@@ -164,10 +165,11 @@ namespace Fix
         
         private static bool MethodTakesUseActionParameter(MethodInfo methodInfo)
         {
+            var actionType = typeof (Action<Func<AppFunc, AppFunc>>);
             try
             {
                 var parameters = methodInfo.GetParameters();
-                return parameters.Length == 1 && parameters[0].ParameterType == typeof(Action<Func<IDictionary<string, object>, Func<IDictionary<string, object>, Task>, Task>>);
+                return parameters.Length == 1 && parameters[0].ParameterType == actionType;
             }
             catch
             {
