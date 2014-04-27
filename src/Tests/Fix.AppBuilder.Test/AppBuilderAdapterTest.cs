@@ -9,6 +9,7 @@ namespace Fix.AppBuilder.Test
     using System.Reflection;
     using Owin;
     using Xunit;
+    using AppFunc = Func<IDictionary<string, object>, Task>;
 
     public class AppBuilderAdapterTest
     {
@@ -16,27 +17,37 @@ namespace Fix.AppBuilder.Test
         public void FixWorksWithIAppBuilderUsingAdapter()
         {
             var assemblies = new[] {Assembly.GetExecutingAssembly(), typeof (AppBuilderAdapter).Assembly};
-            var appFuncBuilder = AppFuncBuilder.Create(assemblies);
+            var startupEnv = new Dictionary<string, object>();
+            var appFuncBuilder = AppFuncBuilder.Create(assemblies, startupEnv);
             var func = appFuncBuilder.Build();
             var dict = new Dictionary<string, object>();
             func(dict);
+            Assert.Equal("Yes", startupEnv["Constructed"]);
             Assert.Equal("Passed", dict["Test"]);
         }
     }
 
     public class OwinAppSetup
     {
-        public static void Setup(IAppBuilder app)
+        public OwinAppSetup(IDictionary<string,object> startupEnv)
         {
-            app.Use((Func<IDictionary<string,object>, Func<IDictionary<string, object>, Task>, Task>)Run);
+            startupEnv["Constructed"] = "Yes";
         }
 
-        private static Task Run(IDictionary<string, object> env, Func<IDictionary<string, object>, Task> next)
+        public void Setup(Action<Func<AppFunc,AppFunc>> use)
         {
-            env["Test"] = "Passed";
-            var tcs = new TaskCompletionSource<int>();
-            tcs.SetResult(0);
-            return tcs.Task;
+            use(Run);
+        }
+
+        private static AppFunc Run(AppFunc _)
+        {
+            return env =>
+            {
+                env["Test"] = "Passed";
+                var tcs = new TaskCompletionSource<int>();
+                tcs.SetResult(0);
+                return tcs.Task;
+            };
         }
     }
 }

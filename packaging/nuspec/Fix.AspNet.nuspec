@@ -17,8 +17,6 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="..\..\build\net40\Fix.AspNet4.dll" target="lib\net40" />
-    <file src="..\..\build\net40\Fix.AspNet4.*db" target="lib\net40" />
     <file src="..\..\build\net45\Fix.AspNet.dll" target="lib\net45" />
     <file src="..\..\build\net45\Fix.AspNet.*db" target="lib\net45" />
     <file src="..\..\src\Fix.AspNet\**\*.cs" target="src" />

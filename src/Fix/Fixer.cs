@@ -21,6 +21,12 @@ namespace Fix
             return this;
         }
 
+        public Fixer Map(string mapPath, BuilderFunc component)
+        {
+            _funcs.Push(Mapper.Map(mapPath, component));
+            return this;
+        }
+
         public AppFunc Build()
         {
             if (Interlocked.Increment(ref _useCount) > 1)

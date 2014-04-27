@@ -11,8 +11,15 @@ namespace FixAsp
 
     public static class OwinAppSetup
     {
-        public static void Setup(Action<Func<AppFunc,AppFunc>>  use)
+        public static void Setup(Action<Func<AppFunc,AppFunc>>  use, Action<string, Func<AppFunc, AppFunc>> map)
         {
+            map("/mapped", next => async env =>
+            {
+                var stream = (Stream) env["owin.ResponseBody"];
+                await stream.WriteAsync("<h1>MAPPED!</h1>");
+                await stream.WriteAsync("<h2>" + env[OwinKeys.RequestPath] + "</h2>");
+                env["owin.ResponseStatusCode"] = 200;
+            });
             use(next => async env =>
             {
                 var stream = (Stream) env["owin.ResponseBody"];

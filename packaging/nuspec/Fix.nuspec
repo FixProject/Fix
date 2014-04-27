@@ -14,9 +14,6 @@
     <tags>fix owin http</tags>
   </metadata>
   <files>
-    <file src="..\..\build\net40\Fix4.dll" target="lib\net40" />
-    <file src="..\..\build\net40\Fix4.*db" target="lib\net40" />
-    <file src="..\..\build\net40\Fix4.xml" target="lib\net40" />
     <file src="..\..\build\net45\Fix.dll" target="lib\net45" />
     <file src="..\..\build\net45\Fix.*db" target="lib\net45" />
     <file src="..\..\build\net45\Fix.xml" target="lib\net45" />
